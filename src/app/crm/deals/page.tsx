@@ -43,14 +43,14 @@ interface KanbanDeal {
 }
 
 const STAGES: { id: DealStage; label: string; color: string }[] = [
-  { id: "novo_lead", label: "Novo Lead", color: "#94a3b8" },
-  { id: "triagem_ia", label: "Triagem IA (WhatsApp)", color: "#ccff00" },
-  { id: "contato_humano", label: "Contato Humano", color: "#38bdf8" },
-  { id: "visita_agendada", label: "Visita Agendada", color: "#818cf8" },
-  { id: "proposta", label: "Proposta", color: "#facc15" },
-  { id: "credito_contrato", label: "Crédito / Contrato", color: "#fb923c" },
-  { id: "fechado_ganho", label: "Fechado Ganho", color: "#4ade80" },
-  { id: "perdido", label: "Perdido", color: "#f87171" },
+  { id: "novo_lead", label: "Novo Lead", color: "#64748b" },
+  { id: "triagem_ia", label: "Triagem IA (WhatsApp)", color: "#16a34a" },
+  { id: "contato_humano", label: "Contato Humano", color: "#0284c7" },
+  { id: "visita_agendada", label: "Visita Agendada", color: "#6366f1" },
+  { id: "proposta", label: "Proposta", color: "#eab308" },
+  { id: "credito_contrato", label: "Crédito / Contrato", color: "#f97316" },
+  { id: "fechado_ganho", label: "Fechado Ganho", color: "#22c55e" },
+  { id: "perdido", label: "Perdido", color: "#ef4444" },
 ];
 
 const INITIAL_DEALS: KanbanDeal[] = [
@@ -168,7 +168,6 @@ export default function KanbanPage() {
     setDeals((prev) =>
       prev.map((deal) => {
         if (deal.id === draggableId) {
-          // Se mover para contato humano ou além, pausa a IA automaticamente por segurança
           const shouldPauseAi =
             targetStage !== "novo_lead" && targetStage !== "triagem_ia"
               ? true
@@ -228,7 +227,7 @@ export default function KanbanPage() {
 
   if (!mounted) {
     return (
-      <div className="flex-1 flex items-center justify-center p-12 text-zinc-500">
+      <div className="flex-1 flex items-center justify-center p-12 text-muted-foreground">
         Carregando Funil de Vendas...
       </div>
     );
@@ -237,17 +236,17 @@ export default function KanbanPage() {
   return (
     <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1700px] mx-auto w-full">
       {/* Top Controls & Metrics Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Funil de Vendas Kanban
             </h1>
             <Badge variant="default" className="text-xs">
               VGV Total: {formatCurrency(totalVgv)}
             </Badge>
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Arraste os cards entre os estágios. A IA de atendimento WhatsApp pausa automaticamente quando o corretor assume.
           </p>
         </div>
@@ -255,13 +254,13 @@ export default function KanbanPage() {
         <div className="flex flex-wrap items-center gap-3">
           {/* Search Box */}
           <div className="relative min-w-[240px]">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
               placeholder="Buscar lead, imóvel ou bairro..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-9 pl-9 pr-4 rounded-full bg-[#131619] border border-white/10 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#ccff00]/60 transition-colors"
+              className="w-full h-9 pl-9 pr-4 rounded-full bg-card border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]/60 transition-colors shadow-xs"
             />
           </div>
 
@@ -283,7 +282,7 @@ export default function KanbanPage() {
               return (
                 <div
                   key={stage.id}
-                  className="w-80 flex flex-col rounded-3xl bg-[#111316] border border-white/[0.07] p-3 space-y-3 shadow-lg"
+                  className="w-80 flex flex-col rounded-3xl bg-slate-100 dark:bg-[#111316] border border-border p-3 space-y-3 shadow-sm dark:shadow-lg transition-colors"
                 >
                   {/* Column Header */}
                   <div className="px-2 pt-1 flex items-center justify-between">
@@ -292,15 +291,15 @@ export default function KanbanPage() {
                         className="h-2.5 w-2.5 rounded-full"
                         style={{ backgroundColor: stage.color }}
                       />
-                      <span className="font-semibold text-xs text-white">
+                      <span className="font-semibold text-xs text-foreground">
                         {stage.label}
                       </span>
-                      <span className="text-[11px] text-zinc-500 font-mono">
+                      <span className="text-[11px] text-muted-foreground font-mono">
                         ({stageDeals.length})
                       </span>
                     </div>
 
-                    <span className="text-[10px] text-zinc-400 font-mono">
+                    <span className="text-[10px] text-muted-foreground font-mono">
                       {stageVgv > 0 ? formatCurrency(stageVgv) : "R$ 0"}
                     </span>
                   </div>
@@ -313,7 +312,7 @@ export default function KanbanPage() {
                         {...provided.droppableProps}
                         className={`flex flex-col gap-2.5 min-h-[450px] rounded-2xl p-1 transition-colors ${
                           snapshot.isDraggingOver
-                            ? "bg-white/[0.03] ring-1 ring-[#ccff00]/30"
+                            ? "bg-muted/60 ring-1 ring-emerald-500/30 dark:ring-[#ccff00]/30"
                             : "bg-transparent"
                         }`}
                       >
@@ -329,20 +328,20 @@ export default function KanbanPage() {
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
                                 onClick={() => setSelectedDeal(deal)}
-                                className={`group rounded-2xl bg-[#171a1e] border p-4 space-y-3 cursor-grab active:cursor-grabbing transition-all hover:border-white/20 hover:bg-[#1a1e23] ${
+                                className={`group rounded-2xl bg-card border p-4 space-y-3 cursor-grab active:cursor-grabbing transition-all hover:border-slate-300 dark:hover:border-white/20 hover:shadow-md ${
                                   snapshot.isDragging
-                                    ? "shadow-2xl ring-2 ring-[#ccff00] scale-105 z-50 border-transparent bg-[#1c2126]"
-                                    : "border-white/[0.07]"
+                                    ? "shadow-2xl ring-2 ring-emerald-500 dark:ring-[#ccff00] scale-105 z-50 border-transparent bg-card"
+                                    : "border-border shadow-xs"
                                 }`}
                               >
                                 {/* Lead Name & AI Status Toggle */}
                                 <div className="flex items-start justify-between gap-2">
                                   <div>
-                                    <h4 className="font-semibold text-white text-sm group-hover:text-[#ccff00] transition-colors">
+                                    <h4 className="font-semibold text-foreground text-sm group-hover:text-emerald-600 dark:group-hover:text-[#ccff00] transition-colors">
                                       {deal.leadName}
                                     </h4>
-                                    <p className="text-[11px] text-zinc-400 flex items-center gap-1 mt-0.5">
-                                      <Phone className="h-3 w-3 text-zinc-500" />
+                                    <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                      <Phone className="h-3 w-3 text-muted-foreground/80" />
                                       {deal.phone}
                                     </p>
                                   </div>
@@ -356,8 +355,8 @@ export default function KanbanPage() {
                                     }
                                     className={`px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1 border transition-all cursor-pointer ${
                                       deal.aiPaused
-                                        ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
-                                        : "bg-[#ccff00]/10 border-[#ccff00]/30 text-[#ccff00] hover:bg-[#ccff00]/20"
+                                        ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20"
+                                        : "bg-emerald-500/10 dark:bg-[#ccff00]/10 border-emerald-500/30 dark:border-[#ccff00]/30 text-emerald-700 dark:text-[#ccff00] hover:bg-emerald-500/20"
                                     }`}
                                   >
                                     <Bot className="h-2.5 w-2.5" />
@@ -367,21 +366,21 @@ export default function KanbanPage() {
 
                                 {/* Imóvel & Bairro */}
                                 <div className="space-y-1">
-                                  <div className="flex items-center gap-1.5 text-xs text-zinc-300 font-medium">
-                                    <Building className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                                  <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
+                                    <Building className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                     <span className="truncate">{deal.propertyTitle}</span>
                                   </div>
-                                  <p className="text-[10px] text-zinc-500 pl-5">
+                                  <p className="text-[10px] text-muted-foreground pl-5">
                                     {deal.neighborhood}
                                   </p>
                                 </div>
 
                                 {/* Valor & Tempo */}
-                                <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
-                                  <span className="font-bold text-white font-mono text-sm">
+                                <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
+                                  <span className="font-bold text-foreground font-mono text-sm">
                                     {formatCurrency(deal.value)}
                                   </span>
-                                  <span className="text-[10px] text-zinc-500">
+                                  <span className="text-[10px] text-muted-foreground">
                                     {deal.createdAt}
                                   </span>
                                 </div>
@@ -402,65 +401,65 @@ export default function KanbanPage() {
 
       {/* Modal / Drawer de Detalhes do Lead */}
       {selectedDeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#131619] border border-white/10 rounded-3xl p-6 max-w-lg w-full space-y-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-card border border-border rounded-3xl p-6 max-w-lg w-full space-y-6 shadow-2xl relative text-foreground">
             <button
               onClick={() => setSelectedDeal(null)}
-              className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-5 right-5 h-8 w-8 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
 
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-zinc-400">Ficha do Lead</span>
+                <span className="text-xs text-muted-foreground">Ficha do Lead</span>
                 <Badge variant="default" className="text-[10px]">
                   {STAGES.find((s) => s.id === selectedDeal.stage)?.label}
                 </Badge>
               </div>
-              <h3 className="text-xl font-bold text-white">
+              <h3 className="text-xl font-bold text-foreground">
                 {selectedDeal.leadName}
               </h3>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="bg-white/[0.03] p-3 rounded-2xl border border-white/5 space-y-1">
-                <span className="text-zinc-500">Telefone / WhatsApp</span>
-                <p className="font-semibold text-white">{selectedDeal.phone}</p>
+              <div className="bg-muted p-3 rounded-2xl border border-border space-y-1">
+                <span className="text-muted-foreground">Telefone / WhatsApp</span>
+                <p className="font-semibold text-foreground">{selectedDeal.phone}</p>
               </div>
 
-              <div className="bg-white/[0.03] p-3 rounded-2xl border border-white/5 space-y-1">
-                <span className="text-zinc-500">Valor em Negociação</span>
-                <p className="font-bold text-[#ccff00] font-mono text-sm">
+              <div className="bg-muted p-3 rounded-2xl border border-border space-y-1">
+                <span className="text-muted-foreground">Valor em Negociação</span>
+                <p className="font-bold text-emerald-600 dark:text-[#ccff00] font-mono text-sm">
                   {formatCurrency(selectedDeal.value)}
                 </p>
               </div>
 
-              <div className="col-span-2 bg-white/[0.03] p-3 rounded-2xl border border-white/5 space-y-1">
-                <span className="text-zinc-500">Imóvel de Interesse</span>
-                <p className="font-semibold text-white">
+              <div className="col-span-2 bg-muted p-3 rounded-2xl border border-border space-y-1">
+                <span className="text-muted-foreground">Imóvel de Interesse</span>
+                <p className="font-semibold text-foreground">
                   {selectedDeal.propertyTitle}
                 </p>
-                <p className="text-zinc-400 text-[11px]">
+                <p className="text-muted-foreground text-[11px]">
                   {selectedDeal.neighborhood} • {selectedDeal.specs || "Padrão"}
                 </p>
               </div>
 
-              <div className="col-span-2 bg-white/[0.03] p-3 rounded-2xl border border-white/5 space-y-1">
-                <span className="text-zinc-500">Notas & Qualificação da IA</span>
-                <p className="text-zinc-300 leading-relaxed">
+              <div className="col-span-2 bg-muted p-3 rounded-2xl border border-border space-y-1">
+                <span className="text-muted-foreground">Notas & Qualificação da IA</span>
+                <p className="text-foreground/90 leading-relaxed">
                   {selectedDeal.notes || "Sem observações adicionais."}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-white/5">
+            <div className="flex items-center justify-between pt-2 border-t border-border">
               <button
                 onClick={(e) => toggleAiPause(selectedDeal.id, e)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 border transition-all cursor-pointer ${
                   selectedDeal.aiPaused
-                    ? "bg-[#ccff00] text-black font-semibold shadow-[0_0_15px_rgba(204,255,0,0.3)]"
-                    : "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                    ? "bg-emerald-600 dark:bg-[#ccff00] text-white dark:text-black font-semibold shadow-sm"
+                    : "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
                 }`}
               >
                 {selectedDeal.aiPaused ? (
@@ -488,83 +487,83 @@ export default function KanbanPage() {
 
       {/* Modal de Criação de Novo Negócio */}
       {isNewDealOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <form
             onSubmit={handleCreateDeal}
-            className="bg-[#131619] border border-white/10 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative"
+            className="bg-card border border-border rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl relative text-foreground"
           >
             <button
               type="button"
               onClick={() => setIsNewDealOpen(false)}
-              className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-5 right-5 h-8 w-8 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
 
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-white">Criar Novo Negócio</h3>
-              <p className="text-xs text-zinc-400">
+              <h3 className="text-lg font-bold text-foreground">Criar Novo Negócio</h3>
+              <p className="text-xs text-muted-foreground">
                 Cadastre um lead diretamente no funil de vendas do DUZZIMOB.
               </p>
             </div>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="text-zinc-400 block mb-1">Nome do Lead / Cliente</label>
+                <label className="text-muted-foreground block mb-1">Nome do Lead / Cliente</label>
                 <input
                   type="text"
                   required
                   placeholder="Ex: João da Silva"
                   value={newLeadName}
                   onChange={(e) => setNewLeadName(e.target.value)}
-                  className="w-full h-10 px-3.5 rounded-xl bg-[#181c20] border border-white/10 text-white focus:outline-none focus:border-[#ccff00]"
+                  className="w-full h-10 px-3.5 rounded-xl bg-muted border border-border text-foreground focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
                 />
               </div>
 
               <div>
-                <label className="text-zinc-400 block mb-1">WhatsApp / Telefone</label>
+                <label className="text-muted-foreground block mb-1">WhatsApp / Telefone</label>
                 <input
                   type="text"
                   required
                   placeholder="(48) 99999-9999"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full h-10 px-3.5 rounded-xl bg-[#181c20] border border-white/10 text-white focus:outline-none focus:border-[#ccff00]"
+                  className="w-full h-10 px-3.5 rounded-xl bg-muted border border-border text-foreground focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
                 />
               </div>
 
               <div>
-                <label className="text-zinc-400 block mb-1">Imóvel de Interesse</label>
+                <label className="text-muted-foreground block mb-1">Imóvel de Interesse</label>
                 <input
                   type="text"
                   placeholder="Ex: Residencial Jardins (Ap. 301)"
                   value={newProperty}
                   onChange={(e) => setNewProperty(e.target.value)}
-                  className="w-full h-10 px-3.5 rounded-xl bg-[#181c20] border border-white/10 text-white focus:outline-none focus:border-[#ccff00]"
+                  className="w-full h-10 px-3.5 rounded-xl bg-muted border border-border text-foreground focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-zinc-400 block mb-1">Valor do Negócio (R$)</label>
+                  <label className="text-muted-foreground block mb-1">Valor do Negócio (R$)</label>
                   <input
                     type="number"
                     placeholder="350000"
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
-                    className="w-full h-10 px-3.5 rounded-xl bg-[#181c20] border border-white/10 text-white focus:outline-none focus:border-[#ccff00]"
+                    className="w-full h-10 px-3.5 rounded-xl bg-muted border border-border text-foreground focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-zinc-400 block mb-1">Estágio Inicial</label>
+                  <label className="text-muted-foreground block mb-1">Estágio Inicial</label>
                   <select
                     value={newStage}
                     onChange={(e) => setNewStage(e.target.value as DealStage)}
-                    className="w-full h-10 px-3 rounded-xl bg-[#181c20] border border-white/10 text-white focus:outline-none focus:border-[#ccff00]"
+                    className="w-full h-10 px-3 rounded-xl bg-muted border border-border text-foreground focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
                   >
                     {STAGES.map((s) => (
-                      <option key={s.id} value={s.id} className="bg-[#131619]">
+                      <option key={s.id} value={s.id} className="bg-card text-foreground">
                         {s.label}
                       </option>
                     ))}
@@ -573,7 +572,7 @@ export default function KanbanPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/5">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
               <Button
                 type="button"
                 variant="outline"

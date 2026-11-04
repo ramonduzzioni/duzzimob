@@ -27,19 +27,19 @@ export function CrmNavbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#08090a]/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-card/90 backdrop-blur-md transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="h-8 w-8 rounded-full bg-[#ccff00] flex items-center justify-center text-black font-extrabold text-sm shadow-[0_0_15px_rgba(204,255,0,0.3)] transition-transform group-hover:scale-105">
+            <div className="h-8 w-8 rounded-full bg-emerald-600 dark:bg-[#ccff00] flex items-center justify-center text-white dark:text-black font-extrabold text-sm shadow-sm dark:shadow-[0_0_15px_rgba(204,255,0,0.3)] transition-transform group-hover:scale-105">
               D
             </div>
             <div className="flex flex-col">
-              <span className="font-bold tracking-tight text-white text-sm">
-                DUZZI<span className="text-[#ccff00]">MOB</span>
+              <span className="font-bold tracking-tight text-foreground text-sm">
+                DUZZI<span className="text-emerald-600 dark:text-[#ccff00]">MOB</span>
               </span>
-              <span className="text-[10px] text-zinc-500 font-mono -mt-1">CRM v1.0</span>
+              <span className="text-[10px] text-muted-foreground font-mono -mt-1">CRM v1.0</span>
             </div>
           </Link>
 
@@ -54,8 +54,8 @@ export function CrmNavbar() {
                   href={item.href}
                   className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                     isActive
-                      ? "bg-[#ccff00]/15 text-[#ccff00] border border-[#ccff00]/30 shadow-[0_0_12px_rgba(204,255,0,0.15)]"
-                      : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
+                      ? "bg-emerald-500/10 dark:bg-[#ccff00]/15 text-emerald-800 dark:text-[#ccff00] border border-emerald-500/30 dark:border-[#ccff00]/30 shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -76,12 +76,12 @@ export function CrmNavbar() {
 
           <Link href="/">
             <Button variant="outline" size="sm" className="hidden lg:inline-flex text-xs">
-              <Home className="h-3.5 w-3.5 text-zinc-400" />
+              <Home className="h-3.5 w-3.5 text-muted-foreground" />
               Visão Geral
             </Button>
           </Link>
 
-          <div className="h-8 w-8 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-xs font-semibold text-zinc-300">
+          <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center text-xs font-semibold text-foreground">
             CD
           </div>
         </div>

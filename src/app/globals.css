@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+@variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #f8fafc;
@@ -13,8 +13,11 @@
   --muted-foreground: #64748b;
   --primary: #15803d;
   --primary-foreground: #ffffff;
-  --accent-neon: #ccff00;
-  --accent-neon-fg: #000000;
+  --accent-neon: #15803d;
+  --accent-neon-fg: #ffffff;
+  --navbar-bg: rgba(255, 255, 255, 0.85);
+  --input-bg: #ffffff;
+  --column-bg: #e2e8f0;
 }
 
 .dark {
@@ -30,6 +33,26 @@
   --primary-foreground: #000000;
   --accent-neon: #ccff00;
   --accent-neon-fg: #000000;
+  --navbar-bg: rgba(19, 22, 25, 0.85);
+  --input-bg: #181c20;
+  --column-bg: #111316;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-inner: var(--card-inner);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent-neon: var(--accent-neon);
+  --color-navbar: var(--navbar-bg);
+  --color-input: var(--input-bg);
+  --color-column: var(--column-bg);
 }
 
 body {
@@ -37,22 +60,18 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Glow & Custom Shadows inspirados no Remoplus */
+/* Glow & Custom Shadows */
 .glow-neon {
   box-shadow: 0 0 25px rgba(204, 255, 0, 0.25);
 }
 
-.glow-neon-sm {
-  box-shadow: 0 0 12px rgba(204, 255, 0, 0.2);
+.dark .glow-neon {
+  box-shadow: 0 0 25px rgba(204, 255, 0, 0.25);
 }
 
-.glow-subtle {
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-}
-
-/* Base borders */
-* {
-  border-color: var(--border);
+:root:not(.dark) .glow-neon {
+  box-shadow: 0 4px 15px rgba(21, 128, 61, 0.2);
 }

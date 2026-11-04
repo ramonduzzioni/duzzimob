@@ -6,6 +6,7 @@ import {
   Layers,
   Calculator,
   MessageSquare,
+  FileCheck2,
   Building2,
   Users,
   Sparkles,
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/crm/deals", label: "Funil Kanban", icon: Layers },
   { href: "/crm/simulations", label: "Simulador Caixa", icon: Calculator },
   { href: "/crm/waha", label: "WhatsApp & IA", icon: MessageSquare },
+  { href: "/crm/contracts", label: "Auditoria Jurídica", icon: FileCheck2 },
 ];
 
 export function CrmNavbar() {
@@ -52,7 +54,7 @@ export function CrmNavbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     isActive
                       ? "bg-emerald-500/10 dark:bg-[#ccff00]/15 text-emerald-800 dark:text-[#ccff00] border border-emerald-500/30 dark:border-[#ccff00]/30 shadow-xs"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"

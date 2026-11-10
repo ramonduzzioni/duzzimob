@@ -8,10 +8,12 @@ export interface SimulationInput {
   cidade?: string;
   uf?: string;
   tetoMcmvPersonalizado?: number; // Permite sobrepor o teto oficial do município
+  hasFgts3Years?: boolean; // Padrão: true (3 anos ou mais sob o regime do FGTS - Desconto Cotista Caixa)
+  interestRateAnnual?: number; // Permite digitar taxa efetiva anual personalizada (ex: 7.93)
+  interestRateNominal?: number; // Permite digitar taxa nominal anual personalizada (ex: 7.66)
   fgtsValue?: number;
   systemType?: SimulationSystem;
   termMonths?: number;
-  interestRateAnnual?: number;
   builderInstallmentsCount?: number;
   builderReforcosCount?: number;
   sinalPercent?: number;
@@ -42,8 +44,10 @@ export interface SimulationResult {
   proponentAgeYears: number;
   maxCaixaTermMonths: number;
   appliedTermMonths: number;
-  interestRateAnnual: number;
-  interestRateMonthly: number;
+  interestRateAnnual: number; // Taxa Efetiva a.a. (ex: 7.93%)
+  interestRateNominal: number; // Taxa Nominal a.a. (ex: 7.66%)
+  interestRateMonthly: number; // Taxa mensal aplicada no saldo devedor
+  hasFgts3Years: boolean;
   caixaFaixaId: number;
   caixaFaixaNome: string;
   municipioInfo: MunicipioMcmvInfo;
@@ -296,28 +300,105 @@ export function getMunicipioMcmvInfo(
 
 /**
  * Gera as faixas da Caixa ajustadas ao Teto MCMV específico do município
+ * e com o benefício de cotista do FGTS (3 anos ou mais sob regime do FGTS: -0,5% na taxa)
  */
-export function getFaixasCaixaParaMunicipio(tetoFaixa1e2: number) {
+export function getFaixasCaixaParaMunicipio(tetoFaixa1e2: number, hasFgts3Years: boolean = true) {
   return [
-    { id: 1, nome: "MCMV Faixa 1 (Sub 1)", limiteRenda: 2160, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.048548 },
-    { id: 2, nome: "MCMV Faixa 1 (Sub 2)", limiteRenda: 2850, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.051162 },
-    { id: 3, nome: "MCMV Faixa 2 (Sub 1)", limiteRenda: 3200, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.053782 },
-    { id: 4, nome: "MCMV Faixa 2 (Sub 2)", limiteRenda: 3500, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.056408 },
-    { id: 5, nome: "MCMV Faixa 2 (Sub 3)", limiteRenda: 4000, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.061678 },
-    { id: 6, nome: "MCMV Faixa 2 (Sub 4)", limiteRenda: 5000, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.07229 },
-    { id: 7, nome: "MCMV Faixa 3 / Pró-Cotista", limiteRenda: 9600, limiteImovel: 400000, taxaEfetiva: 0.084722 },
-    { id: 8, nome: "MCMV Faixa 4 / SBPE Especial", limiteRenda: 13000, limiteImovel: 600000, taxaEfetiva: 0.1047 },
-    { id: 9, nome: "SBPE Mercado Tradicional", limiteRenda: 77500, limiteImovel: 2250000, taxaEfetiva: 0.1149 },
-    { id: 10, nome: "Carteira Hipotecária / Livre", limiteRenda: Infinity, limiteImovel: Infinity, taxaEfetiva: 0.134 },
+    {
+      id: 1,
+      nome: "MCMV Faixa 1 (Sub 1)",
+      limiteRenda: 2160,
+      limiteImovel: tetoFaixa1e2,
+      taxaNominal: hasFgts3Years ? 0.0400 : 0.0450,
+      taxaEfetiva: hasFgts3Years ? 0.040742 : 0.045939,
+    },
+    {
+      id: 2,
+      nome: "MCMV Faixa 1 (Sub 2)",
+      limiteRenda: 2850,
+      limiteImovel: tetoFaixa1e2,
+      taxaNominal: hasFgts3Years ? 0.0425 : 0.0475,
+      taxaEfetiva: hasFgts3Years ? 0.043339 : 0.048548,
+    },
+    {
+      id: 3,
+      nome: "MCMV Faixa 2 (Sub 1)",
+      limiteRenda: 3200,
+      limiteImovel: tetoFaixa1e2,
+      taxaNominal: hasFgts3Years ? 0.0475 : 0.0525,
+      taxaEfetiva: hasFgts3Years ? 0.048548 : 0.053782,
+    },
+    {
+      id: 4,
+      nome: "MCMV Faixa 2 (Sub 2)",
+      limiteRenda: 3500,
+      limiteImovel: tetoFaixa1e2,
+      taxaNominal: hasFgts3Years ? 0.0500 : 0.0550,
+      taxaEfetiva: hasFgts3Years ? 0.051162 : 0.056408,
+    },
+    {
+      id: 5,
+      nome: "MCMV Faixa 2 (Sub 3)",
+      limiteRenda: 4000,
+      limiteImovel: tetoFaixa1e2,
+      taxaNominal: hasFgts3Years ? 0.0550 : 0.0600,
+      taxaEfetiva: hasFgts3Years ? 0.056408 : 0.061678,
+    },
+    {
+      id: 6,
+      nome: "MCMV Faixa 2 (Sub 4)",
+      limiteRenda: 5000,
+      limiteImovel: tetoFaixa1e2,
+      taxaNominal: hasFgts3Years ? 0.0650 : 0.0700,
+      taxaEfetiva: hasFgts3Years ? 0.066972 : 0.072290,
+    },
+    {
+      id: 7,
+      nome: "MCMV Faixa 3 / Pró-Cotista",
+      limiteRenda: 9600,
+      limiteImovel: 400000,
+      // Oficial Caixa: Cotista FGTS = Nominal 7.66% / Efetiva 7.93%; Balcão = Nominal 8.16% / Efetiva 8.47%
+      taxaNominal: hasFgts3Years ? 0.0766 : 0.0816,
+      taxaEfetiva: hasFgts3Years ? 0.079348 : 0.084722,
+    },
+    {
+      id: 8,
+      nome: "MCMV Faixa 4 / SBPE Especial",
+      limiteRenda: 13000,
+      limiteImovel: 600000,
+      taxaNominal: 0.1000,
+      taxaEfetiva: 0.104713,
+    },
+    {
+      id: 9,
+      nome: "SBPE Mercado Tradicional",
+      limiteRenda: 77500,
+      limiteImovel: 2250000,
+      taxaNominal: 0.1092,
+      taxaEfetiva: 0.114861,
+    },
+    {
+      id: 10,
+      nome: "Carteira Hipotecária / Livre",
+      limiteRenda: Infinity,
+      limiteImovel: Infinity,
+      taxaNominal: 0.1265,
+      taxaEfetiva: 0.134114,
+    },
   ];
 }
 
 /**
- * Identifica a faixa de taxa da Caixa por Renda, Valor do Imóvel e Teto da Cidade.
+ * Identifica a faixa de taxa da Caixa por Renda, Valor do Imóvel, Teto da Cidade e Condição de Cotista.
  * REGRA CAIXA: O teto do município altera a faixa e, consequentemente, a taxa de juros!
  */
-export function getFaixaCaixa(renda: number, valorImovel: number, tetoFaixa1e2: number = 250000) {
-  const faixas = getFaixasCaixaParaMunicipio(tetoFaixa1e2);
+export function getFaixaCaixa(
+  renda: number,
+  valorImovel: number,
+  tetoFaixa1e2: number = 250000,
+  hasFgts3Years: boolean = true
+) {
+  const faixas = getFaixasCaixaParaMunicipio(tetoFaixa1e2, hasFgts3Years);
   const idxRenda = faixas.findIndex((f) => renda <= f.limiteRenda);
   const idxImovel = faixas.findIndex((f) => valorImovel <= f.limiteImovel);
 
@@ -328,29 +409,32 @@ export function getFaixaCaixa(renda: number, valorImovel: number, tetoFaixa1e2: 
   const finalIdx = Math.max(safeIdxRenda, safeIdxImovel);
   const faixa = faixas[finalIdx];
 
+  const taxaNomStr = (faixa.taxaNominal * 100).toFixed(2);
+  const taxaEfStr = (faixa.taxaEfetiva * 100).toFixed(2);
+
   let enquadramentoMcmv: "FAIXA_1_2" | "FAIXA_3" | "FAIXA_4" | "SBPE" = "FAIXA_1_2";
   let motivoEnquadramento = "";
 
   if (finalIdx <= 5) {
     enquadramentoMcmv = "FAIXA_1_2";
-    motivoEnquadramento = `Imóvel (R$ ${valorImovel.toLocaleString("pt-BR")}) dentro do teto MCMV municipal (R$ ${tetoFaixa1e2.toLocaleString("pt-BR")}) e renda familiar elegível para Faixa 1/2 com taxa social subsidiada de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+    motivoEnquadramento = `Imóvel (R$ ${valorImovel.toLocaleString("pt-BR")}) dentro do teto MCMV municipal (R$ ${tetoFaixa1e2.toLocaleString("pt-BR")}) e renda familiar elegível para Faixa 1/2 com taxa social subsidiada de ${taxaEfStr}% a.a. efetiva (${taxaNomStr}% a.a. nominal).`;
   } else if (finalIdx === 6) {
     enquadramentoMcmv = "FAIXA_3";
     if (safeIdxImovel > safeIdxRenda) {
-      motivoEnquadramento = `O imóvel (R$ ${valorImovel.toLocaleString("pt-BR")}) ultrapassou o teto de Faixa 1/2 do município (R$ ${tetoFaixa1e2.toLocaleString("pt-BR")}). Reenquadrado para MCMV Faixa 3 (Teto até R$ 400.000), elevando a taxa para ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a. sem direito a subsídio.`;
+      motivoEnquadramento = `O imóvel (R$ ${valorImovel.toLocaleString("pt-BR")}) ultrapassou o teto de Faixa 1/2 do município (R$ ${tetoFaixa1e2.toLocaleString("pt-BR")}). Reenquadrado para MCMV Faixa 3 (Teto até R$ 400.000) com juros Caixa de ${taxaEfStr}% a.a. efetivos (${taxaNomStr}% a.a. nominais) sem direito a subsídio de entrada.`;
     } else {
-      motivoEnquadramento = `Enquadrado no MCMV Faixa 3 por renda familiar (R$ ${renda.toLocaleString("pt-BR")}), com taxa de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+      motivoEnquadramento = `Enquadrado no MCMV Faixa 3 por renda familiar (R$ ${renda.toLocaleString("pt-BR")}), com taxa oficial Caixa de ${taxaEfStr}% a.a. efetiva (${taxaNomStr}% a.a. nominal${hasFgts3Years ? " com desconto cotista FGTS" : ""}).`;
     }
   } else if (finalIdx === 7) {
     enquadramentoMcmv = "FAIXA_4";
     if (safeIdxImovel > safeIdxRenda) {
-      motivoEnquadramento = `O imóvel (R$ ${valorImovel.toLocaleString("pt-BR")}) ultrapassou o teto do MCMV Faixa 3 (R$ 400.000). Reenquadrado para Faixa 4 (Classe Média até R$ 600.000) com taxa de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+      motivoEnquadramento = `O imóvel (R$ ${valorImovel.toLocaleString("pt-BR")}) ultrapassou o teto do MCMV Faixa 3 (R$ 400.000). Reenquadrado para Faixa 4 (Classe Média até R$ 600.000) com taxa de ${taxaEfStr}% a.a. efetiva (${taxaNomStr}% a.a. nominal).`;
     } else {
-      motivoEnquadramento = `Enquadrado na Faixa 4 / Classe Média por renda com taxa de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+      motivoEnquadramento = `Enquadrado na Faixa 4 / Classe Média por renda com taxa de ${taxaEfStr}% a.a. efetiva (${taxaNomStr}% a.a. nominal).`;
     }
   } else {
     enquadramentoMcmv = "SBPE";
-    motivoEnquadramento = `Financiamento SBPE / Mercado tradicional (fora do programa MCMV), com taxa de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+    motivoEnquadramento = `Financiamento SBPE / Mercado tradicional (fora do programa MCMV), com taxa de ${taxaEfStr}% a.a. efetiva (${taxaNomStr}% a.a. nominal).`;
   }
 
   return {
@@ -419,16 +503,32 @@ export function calculateCaixaSimulation(input: SimulationInput): SimulationResu
   const appliedTermMonths = Math.min(requestedTerm, maxCaixaTermMonths);
   const safeTermMonths = Math.max(1, appliedTermMonths);
 
+  const hasFgts3Years = input.hasFgts3Years ?? true;
+
   // 2. Diagnóstico do Município e Teto MCMV Oficial
   const municipioInfo = getMunicipioMcmvInfo(cidade, uf, input.tetoMcmvPersonalizado);
 
-  // 3. Faixa e Taxa de Juros Caixa (REGRA CAIXA: o teto do município altera a faixa e a taxa)
-  const faixa = getFaixaCaixa(grossIncome, propertyValue, municipioInfo.tetoFaixa1e2);
+  // 3. Faixa e Taxa de Juros Caixa (REGRA CAIXA: teto do município e FGTS cotista definem as taxas nominais e efetivas)
+  const faixa = getFaixaCaixa(grossIncome, propertyValue, municipioInfo.tetoFaixa1e2, hasFgts3Years);
   municipioInfo.enquadramentoMcmv = faixa.enquadramentoMcmv;
   municipioInfo.motivoEnquadramento = faixa.motivoEnquadramento;
 
-  const interestRateAnnual = input.interestRateAnnual || Number((faixa.taxaEfetiva * 100).toFixed(2));
-  const interestRateMonthly = Math.pow(1 + interestRateAnnual / 100, 1 / 12) - 1;
+  // Determinação das Taxas (Nominal, Efetiva e Mensal)
+  let interestRateNominal = Number((faixa.taxaNominal * 100).toFixed(2));
+  let interestRateAnnual = Number((faixa.taxaEfetiva * 100).toFixed(2)); // Efetiva Caixa (ex: 7.93%)
+  let interestRateMonthly = faixa.taxaNominal / 12;
+
+  // Se o usuário especificou taxa nominal personalizada
+  if (input.interestRateNominal !== undefined && input.interestRateNominal > 0) {
+    interestRateNominal = input.interestRateNominal;
+    interestRateMonthly = interestRateNominal / 100 / 12;
+    interestRateAnnual = Number(((Math.pow(1 + interestRateMonthly, 12) - 1) * 100).toFixed(2));
+  } else if (input.interestRateAnnual !== undefined && input.interestRateAnnual > 0) {
+    // Se o usuário especificou taxa efetiva personalizada
+    interestRateAnnual = input.interestRateAnnual;
+    interestRateMonthly = Math.pow(1 + interestRateAnnual / 100, 1 / 12) - 1;
+    interestRateNominal = Number((interestRateMonthly * 12 * 100).toFixed(2));
+  }
 
   // 4. Sistema de Amortização
   // Regra Caixa: Se juros >= 10.92%, padrão é SAC. Caso contrário, permite escolha
@@ -525,7 +625,9 @@ export function calculateCaixaSimulation(input: SimulationInput): SimulationResu
     maxCaixaTermMonths,
     appliedTermMonths,
     interestRateAnnual,
+    interestRateNominal,
     interestRateMonthly,
+    hasFgts3Years,
     caixaFaixaId: faixa.id,
     caixaFaixaNome: faixa.nome,
     municipioInfo,

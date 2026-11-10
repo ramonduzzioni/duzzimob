@@ -23,6 +23,7 @@ import {
   Clock,
   MapPin,
   Building2,
+  Percent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,9 @@ export default function SimulationsPage() {
   const [cidade, setCidade] = React.useState<string>("Criciúma");
   const [uf, setUf] = React.useState<string>("SC");
   const [tetoMcmvPersonalizado, setTetoMcmvPersonalizado] = React.useState<number | undefined>(undefined);
+  const [hasFgts3Years, setHasFgts3Years] = React.useState<boolean>(true); // 3 anos sob regime do FGTS (desconto cotista Caixa)
+  const [customRateEffective, setCustomRateEffective] = React.useState<number | undefined>(undefined);
+  const [isEditingRate, setIsEditingRate] = React.useState<boolean>(false);
   const [fgtsValue, setFgtsValue] = React.useState<number>(0);
   const [useFgtsAsX, setUseFgtsAsX] = React.useState<boolean>(true);
   const [systemType, setSystemType] = React.useState<SimulationSystem>("SAC");
@@ -114,6 +118,8 @@ export default function SimulationsPage() {
       cidade,
       uf,
       tetoMcmvPersonalizado,
+      hasFgts3Years,
+      interestRateAnnual: customRateEffective,
       fgtsValue,
       systemType,
       termMonths,
@@ -129,6 +135,8 @@ export default function SimulationsPage() {
     cidade,
     uf,
     tetoMcmvPersonalizado,
+    hasFgts3Years,
+    customRateEffective,
     fgtsValue,
     systemType,
     termMonths,
@@ -284,9 +292,14 @@ export default function SimulationsPage() {
           <p className="text-2xl font-bold text-foreground font-mono">
             {formatCurrency(simulation.approvedFinancingValue)}
           </p>
-          <p className="text-[10px] text-muted-foreground truncate" title={simulation.caixaFaixaNome}>
-            Taxa: <strong className="text-foreground">{simulation.interestRateAnnual}% a.a.</strong> ({simulation.caixaFaixaNome})
-          </p>
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>
+              Efetiva: <strong className="text-foreground font-mono">{simulation.interestRateAnnual}% a.a.</strong>
+            </span>
+            <span>
+              Nominal: <strong className="text-foreground font-mono">{simulation.interestRateNominal}% a.a.</strong>
+            </span>
+          </div>
         </div>
 
         {/* 1ª Parcela Estimada Caixa (com TAC, DFI e MIP) */}
@@ -601,6 +614,113 @@ export default function SimulationsPage() {
                       </p>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Taxas Oficiais Caixa: Efetiva e Nominal + Cotista FGTS */}
+              <div className="sm:col-span-2 p-3 rounded-xl bg-muted/60 border border-border space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <Percent className="h-3.5 w-3.5 text-emerald-600 dark:text-[#ccff00]" />
+                      Taxa de Juros Caixa
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      ({simulation.caixaFaixaNome})
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-[11px]">
+                    {customRateEffective !== undefined && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomRateEffective(undefined);
+                          setIsEditingRate(false);
+                        }}
+                        className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer"
+                      >
+                        Restaurar padrão
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingRate(!isEditingRate)}
+                      className="text-[10px] text-emerald-600 dark:text-[#ccff00] hover:underline cursor-pointer font-medium"
+                    >
+                      {isEditingRate ? "Concluir" : "Editar Taxa"}
+                    </button>
+                  </div>
+                </div>
+
+                {isEditingRate ? (
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground block mb-1">
+                        Juros Efetivos (% a.a.)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={customRateEffective ?? simulation.interestRateAnnual}
+                        onChange={(e) => setCustomRateEffective(Number(e.target.value))}
+                        className="w-full h-8 px-2.5 rounded-lg bg-card border border-border text-foreground font-mono text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
+                        placeholder="Ex: 7.93"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground block mb-1">
+                        Juros Nominais (% a.a.)
+                      </label>
+                      <div className="h-8 px-2.5 rounded-lg bg-card/60 border border-border text-muted-foreground font-mono text-xs flex items-center">
+                        {simulation.interestRateNominal}% a.a.
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 pt-0.5">
+                    <div className="p-2 rounded-lg bg-card border border-border">
+                      <span className="text-[10px] text-muted-foreground block font-medium">Juros Efetivos</span>
+                      <p className="text-lg font-bold text-emerald-600 dark:text-[#ccff00] font-mono">
+                        {simulation.interestRateAnnual}% <span className="text-[10px] text-muted-foreground font-normal">a.a.</span>
+                      </p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-card border border-border">
+                      <span className="text-[10px] text-muted-foreground block font-medium">Juros Nominais</span>
+                      <p className="text-lg font-bold text-foreground font-mono">
+                        {simulation.interestRateNominal}% <span className="text-[10px] text-muted-foreground font-normal">a.a.</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Opção Cotista FGTS (3 anos de trabalho com FGTS) */}
+                <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-medium text-foreground block text-[11px]">
+                      Possui 3 anos sob regime do FGTS? (Desconto de Cotista Caixa)
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {hasFgts3Years
+                        ? "Ativo: Redução de 0,5% a.a. nos juros Caixa (7,66% nom. / 7,93% efet.)"
+                        : "Inativo: Taxa balcão sem redução de cotista"}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHasFgts3Years(!hasFgts3Years);
+                      setCustomRateEffective(undefined);
+                    }}
+                    className={`h-7 px-3 rounded-full text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      hasFgts3Years
+                        ? "bg-emerald-600 dark:bg-[#ccff00] text-white dark:text-black border-emerald-600 dark:border-[#ccff00]"
+                        : "bg-muted text-muted-foreground border-border"
+                    }`}
+                  >
+                    {hasFgts3Years ? <Check className="h-3 w-3" /> : null}
+                    {hasFgts3Years ? "Sim (Cotista)" : "Não"}
+                  </button>
                 </div>
               </div>
 

@@ -1,370 +1,240 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import fs from "fs";
+import path from "path";
+import { PDFDocument } from "pdf-lib";
 import { SimulationResult } from "@/lib/calculator/caixa";
-import { formatCurrency } from "@/lib/utils";
 
 export interface ProposalPdfData {
-  proposalNumber: string;
-  clientName: string;
-  clientPhone: string;
-  propertyTitle: string;
-  neighborhood: string;
-  corretorName: string;
-  creci: string;
-  simulation: SimulationResult;
+  proposalNumber?: string;
+  dataProposta?: string;
+
+  // Identificação do Imóvel
+  construtoraEmpreendimento?: string;
+  unidadeApartamento?: string;
+  garagemBox?: string;
+  outrasInformacoes?: string;
+
+  // Condições de Pagamento
+  propertyValue?: number;
+  sinalValor?: number | string;
+  sinalQuantidade?: string;
+  sinalPrazo?: string;
+
+  parcelasValor?: number | string;
+  parcelasQuantidade?: number | string;
+  parcelasPrazo?: string;
+
+  reforcosValor?: number | string;
+  reforcosQuantidade?: number | string;
+  reforcosPrazo?: string;
+
+  fgtsValor?: number | string;
+  fgtsQuantidade?: string;
+  fgtsPrazo?: string;
+
+  financiamentoValor?: number | string;
+  financiamentoQuantidade?: string;
+  financiamentoPrazo?: string;
+
+  escrituraValor?: number | string;
+  escrituraQuantidade?: string;
+  escrituraPrazo?: string;
+
+  // Dados do Comprador
+  clientName?: string;
+  compradorNome?: string;
+  compradorCpf?: string;
+  compradorRg?: string;
+  compradorEstadoCivil?: string;
+  compradorProfissao?: string;
+  compradorEmail?: string;
+  compradorTelefone?: string;
+
+  // Dados do Cônjuge
+  conjugeNome?: string;
+  conjugeCpf?: string;
+  conjugeRg?: string;
+  conjugeProfissao?: string;
+  conjugeEmail?: string;
+  conjugeTelefone?: string;
+
+  // Observações
+  observacoes?: string;
+
+  // Local e Data
+  cidade?: string;
+  dataDia?: string;
+  dataMes?: string;
+  dataAno?: string;
+
+  // Dados legados de simulação caso enviados
+  simulation?: SimulationResult;
+  clientPhone?: string;
+  propertyTitle?: string;
+  neighborhood?: string;
+}
+
+const MONTH_NAMES = [
+  "JANEIRO",
+  "FEVEREIRO",
+  "MARÇO",
+  "ABRIL",
+  "MAIO",
+  "JUNHO",
+  "JULHO",
+  "AGOSTO",
+  "SETEMBRO",
+  "OUTUBRO",
+  "NOVEMBRO",
+  "DEZEMBRO",
+];
+
+function formatNumberPlain(val: number | string | undefined | null): string {
+  if (val === undefined || val === null || val === "") return "";
+  if (typeof val === "string") return val;
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(val);
+}
+
+function formatCurrencyFull(val: number | string | undefined | null): string {
+  if (val === undefined || val === null || val === "") return "";
+  if (typeof val === "string" && val.startsWith("R$")) return val;
+  const num = typeof val === "string" ? parseFloat(val.replace(/\D/g, "")) / 100 : val;
+  if (isNaN(num)) return typeof val === "string" ? val : "";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(num);
 }
 
 export async function generateProposalPdf(data: ProposalPdfData): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([595.28, 841.89]); // A4 em pontos (72 dpi)
-  const { width, height } = page.getSize();
+  const templatePath = path.join(process.cwd(), "public", "templates", "Proposta_Compra_Imovel_Editavel.pdf");
+  if (!fs.existsSync(templatePath)) {
+    throw new Error("Arquivo de modelo 'Proposta_Compra_Imovel_Editavel.pdf' não encontrado em public/templates/.");
+  }
+  const templateBytes = fs.readFileSync(templatePath);
 
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const pdfDoc = await PDFDocument.load(templateBytes);
+  const form = pdfDoc.getForm();
 
-  // Cores
-  const darkBg = rgb(0.06, 0.07, 0.08); // #0f1214
-  const limeColor = rgb(0.8, 1.0, 0.0); // #ccff00
-  const white = rgb(1, 1, 1);
-  const grayLight = rgb(0.7, 0.72, 0.75);
-  const grayDark = rgb(0.18, 0.2, 0.23);
-  const cardBg = rgb(0.1, 0.12, 0.14);
+  const setFieldSafely = (fieldName: string, value: string | undefined | null) => {
+    if (!value) return;
+    try {
+      const field = form.getTextField(fieldName);
+      field.setText(String(value));
+    } catch {
+      // Campo opcional ausente no formulário
+    }
+  };
 
-  // 1. Cabeçalho escuro com accent lime
-  page.drawRectangle({
-    x: 0,
-    y: height - 100,
-    width: width,
-    height: 100,
-    color: darkBg,
-  });
-
-  page.drawRectangle({
-    x: 0,
-    y: height - 102,
-    width: width,
-    height: 3,
-    color: limeColor,
-  });
-
-  // Título da Proposta
-  page.drawText("DUZZIMOB", {
-    x: 40,
-    y: height - 48,
-    size: 20,
-    font: fontBold,
-    color: white,
-  });
-
-  page.drawText("PROPOSTA DE COMPRA & SIMULAÇÃO HABITACIONAL", {
-    x: 40,
-    y: height - 68,
-    size: 10,
-    font: fontRegular,
-    color: grayLight,
-  });
-
-  // Número da Proposta & Data
-  page.drawText(`Proposta: #${data.proposalNumber}`, {
-    x: width - 180,
-    y: height - 48,
-    size: 11,
-    font: fontBold,
-    color: limeColor,
-  });
-
+  // 1. Cabeçalho
   const now = new Date();
-  const dateStr = `${String(now.getDate()).padStart(2, "0")}/${String(
-    now.getMonth() + 1
-  ).padStart(2, "0")}/${now.getFullYear()}`;
+  const defaultDia = String(now.getDate()).padStart(2, "0");
+  const defaultMes = MONTH_NAMES[now.getMonth()];
+  const defaultAno = String(now.getFullYear());
+  const defaultDataFormatted = `${defaultDia}/${String(now.getMonth() + 1).padStart(2, "0")}/${defaultAno}`;
 
-  page.drawText(`Emitido em: ${dateStr}`, {
-    x: width - 180,
-    y: height - 66,
-    size: 9,
-    font: fontRegular,
-    color: grayLight,
-  });
+  setFieldSafely("Proposta_Numero", data.proposalNumber || "");
+  setFieldSafely("Data_Proposta", data.dataProposta || defaultDataFormatted);
 
-  let currentY = height - 130;
+  // 2. Identificação do Imóvel
+  const empreendimento =
+    data.construtoraEmpreendimento || data.propertyTitle || "";
+  setFieldSafely("Construtora_Empreendimento", empreendimento);
+  setFieldSafely("Unidade_Apartamento", data.unidadeApartamento || "");
+  setFieldSafely("Garagem_Box", data.garagemBox || "");
+  setFieldSafely("Outras_Informacoes", data.outrasInformacoes || data.neighborhood || "");
 
-  // 2. Bloco do Cliente & Imóvel
-  page.drawRectangle({
-    x: 40,
-    y: currentY - 65,
-    width: width - 80,
-    height: 65,
-    color: cardBg,
-    borderColor: grayDark,
-    borderWidth: 1,
-  });
+  // 3. Condições de Pagamento
+  const valorImovel = data.propertyValue ?? data.simulation?.propertyValue;
+  setFieldSafely("Valor_Imovel_Total", formatCurrencyFull(valorImovel));
 
-  page.drawText("DADOS DO CLIENTE & IMÓVEL", {
-    x: 55,
-    y: currentY - 20,
-    size: 10,
-    font: fontBold,
-    color: limeColor,
-  });
+  // Sinal / Entrada
+  const sinalVal = data.sinalValor ?? data.simulation?.builderPlan.sinal;
+  setFieldSafely("Sinal_Valor", formatNumberPlain(sinalVal));
+  setFieldSafely("Sinal_Quantidade", data.sinalQuantidade || "");
+  setFieldSafely("Sinal_Prazo", data.sinalPrazo || (sinalVal ? "ato" : ""));
 
-  page.drawText(`Cliente: ${data.clientName}`, {
-    x: 55,
-    y: currentY - 38,
-    size: 9,
-    font: fontBold,
-    color: white,
-  });
+  // Parcelas mensais
+  const parcVal = data.parcelasValor ?? data.simulation?.builderPlan.mensais.valorUnitario;
+  const parcQtd = data.parcelasQuantidade ?? data.simulation?.builderPlan.mensais.qtd;
+  setFieldSafely("Parcelas_Valor", formatNumberPlain(parcVal));
+  setFieldSafely("Parcelas_Quantidade", parcQtd ? String(parcQtd) : "");
+  setFieldSafely("Parcelas_Prazo", data.parcelasPrazo || "");
 
-  page.drawText(`WhatsApp: ${data.clientPhone}`, {
-    x: 55,
-    y: currentY - 52,
-    size: 9,
-    font: fontRegular,
-    color: grayLight,
-  });
+  // Reforços
+  const reforcoVal = data.reforcosValor ?? (data.simulation?.builderPlan.reforcos.qtd ? data.simulation.builderPlan.reforcos.valorUnitario : "");
+  const reforcoQtd = data.reforcosQuantidade ?? (data.simulation?.builderPlan.reforcos.qtd || "");
+  setFieldSafely("Reforcos_Valor", formatNumberPlain(reforcoVal));
+  setFieldSafely("Reforcos_Quantidade", reforcoQtd ? String(reforcoQtd) : "");
+  setFieldSafely("Reforcos_Prazo", data.reforcosPrazo || "");
 
-  page.drawText(`Imóvel: ${data.propertyTitle}`, {
-    x: 320,
-    y: currentY - 38,
-    size: 9,
-    font: fontBold,
-    color: white,
-  });
+  // FGTS
+  const fgtsVal = data.fgtsValor ?? (data.simulation?.fgtsValue ? data.simulation.fgtsValue : "");
+  if (typeof fgtsVal === "string" && fgtsVal.toUpperCase() === "X") {
+    setFieldSafely("FGTS_Valor", "X");
+  } else if (fgtsVal) {
+    setFieldSafely("FGTS_Valor", formatNumberPlain(fgtsVal));
+  }
+  setFieldSafely("FGTS_Quantidade", data.fgtsQuantidade || "");
+  setFieldSafely("FGTS_Prazo", data.fgtsPrazo || "");
 
-  page.drawText(`Localização: ${data.neighborhood}`, {
-    x: 320,
-    y: currentY - 52,
-    size: 9,
-    font: fontRegular,
-    color: grayLight,
-  });
+  // Financiamento (CAIXA)
+  const financVal = data.financiamentoValor ?? data.simulation?.approvedFinancingValue;
+  setFieldSafely("Financiamento_Valor", formatNumberPlain(financVal));
+  setFieldSafely("Financiamento_Quantidade", data.financiamentoQuantidade || "");
+  setFieldSafely("Financiamento_Prazo", data.financiamentoPrazo || "");
 
-  currentY -= 90;
+  // Escritura / Saldo
+  const escritVal = data.escrituraValor ?? data.simulation?.builderPlan.escrituraEstimada;
+  setFieldSafely("Escritura_Valor", formatNumberPlain(escritVal));
+  setFieldSafely("Escritura_Quantidade", data.escrituraQuantidade || "");
+  setFieldSafely("Escritura_Prazo", data.escrituraPrazo || "");
 
-  // 3. Bloco do Financiamento Habitacional Caixa
-  page.drawRectangle({
-    x: 40,
-    y: currentY - 145,
-    width: width - 80,
-    height: 145,
-    color: cardBg,
-    borderColor: grayDark,
-    borderWidth: 1,
-  });
+  // 4. Dados do Comprador (Proponente)
+  const nomeComprador = data.compradorNome || data.clientName || "";
+  setFieldSafely("Comprador_Nome", nomeComprador.toUpperCase());
+  setFieldSafely("Comprador_CPF", data.compradorCpf || "");
+  setFieldSafely("Comprador_RG", data.compradorRg || "");
+  setFieldSafely("Comprador_Estado_Civil", data.compradorEstadoCivil ? data.compradorEstadoCivil.toUpperCase() : "");
+  setFieldSafely("Comprador_Profissao", data.compradorProfissao ? data.compradorProfissao.toUpperCase() : "");
+  setFieldSafely("Comprador_Email", data.compradorEmail || "");
 
-  page.drawText("1. CRÉDITO HABITACIONAL CAIXA ECONÔMICA FEDERAL", {
-    x: 55,
-    y: currentY - 22,
-    size: 11,
-    font: fontBold,
-    color: limeColor,
-  });
-
-  const sim = data.simulation;
-
-  const leftItems = [
-    { label: "Valor de Avaliação / Venda:", val: formatCurrency(sim.propertyValue) },
-    { label: "Renda Bruta Familiar Cadastrada:", val: formatCurrency(sim.grossIncome) },
-    { label: "Financiamento Máximo Aprovado Caixa:", val: formatCurrency(sim.approvedFinancingValue) },
-    { label: "Subsídio do Programa (MCMV):", val: formatCurrency(sim.subsidyValue) },
-    { label: "Utilização de Saldo FGTS:", val: formatCurrency(sim.fgtsValue) },
-  ];
-
-  let simY = currentY - 42;
-  leftItems.forEach((item) => {
-    page.drawText(item.label, {
-      x: 55,
-      y: simY,
-      size: 9,
-      font: fontRegular,
-      color: grayLight,
-    });
-    page.drawText(item.val, {
-      x: 230,
-      y: simY,
-      size: 9,
-      font: fontBold,
-      color: white,
-    });
-    simY -= 18;
-  });
-
-  // Informações de Parcela e Sistema
-  page.drawText("Condições de Amortização:", {
-    x: 360,
-    y: currentY - 42,
-    size: 9,
-    font: fontBold,
-    color: white,
-  });
-
-  page.drawText(`Sistema: ${sim.systemType} (${sim.termMonths} meses)`, {
-    x: 360,
-    y: currentY - 60,
-    size: 9,
-    font: fontRegular,
-    color: grayLight,
-  });
-
-  page.drawText("1ª Parcela Estimada:", {
-    x: 360,
-    y: currentY - 82,
-    size: 9,
-    font: fontRegular,
-    color: grayLight,
-  });
-  page.drawText(formatCurrency(sim.firstInstallmentCaixa), {
-    x: 360,
-    y: currentY - 98,
-    size: 13,
-    font: fontBold,
-    color: limeColor,
-  });
-
-  if (sim.systemType === "SAC") {
-    page.drawText(`Última Parcela: ${formatCurrency(sim.lastInstallmentCaixa)}`, {
-      x: 360,
-      y: currentY - 116,
-      size: 8,
-      font: fontRegular,
-      color: grayLight,
-    });
+  // 5. Dados do Cônjuge
+  if (data.conjugeNome) {
+    setFieldSafely("Conjuge_Nome", data.conjugeNome.toUpperCase());
+    setFieldSafely("Conjuge_CPF", data.conjugeCpf || "");
+    setFieldSafely("Conjuge_RG", data.conjugeRg || "");
+    setFieldSafely("Conjuge_Profissao", data.conjugeProfissao ? data.conjugeProfissao.toUpperCase() : "");
+    setFieldSafely("Conjuge_Email", data.conjugeEmail || "");
   }
 
-  currentY -= 170;
-
-  // 4. Bloco Construtora (Entrada Parcelada)
-  page.drawRectangle({
-    x: 40,
-    y: currentY - 165,
-    width: width - 80,
-    height: 165,
-    color: cardBg,
-    borderColor: grayDark,
-    borderWidth: 1,
-  });
-
-  page.drawText("2. FLUXO DE PAGAMENTO DIRETO COM A CONSTRUTORA", {
-    x: 55,
-    y: currentY - 22,
-    size: 11,
-    font: fontBold,
-    color: limeColor,
-  });
-
-  page.drawText(
-    `Gap Total de Entrada a Parcelar: ${formatCurrency(sim.downPaymentGap)}`,
-    {
-      x: 55,
-      y: currentY - 42,
-      size: 10,
-      font: fontBold,
-      color: white,
+  // 6. Observações / Condições Especiais
+  let obs = data.observacoes || "";
+  if (!obs) {
+    const phones: string[] = [];
+    const mainPhone = data.compradorTelefone || data.clientPhone;
+    if (mainPhone) {
+      phones.push(`${nomeComprador.split(" ")[0] || "COMPRADOR"}: ${mainPhone}`);
     }
-  );
-
-  const plan = sim.builderPlan;
-  const planRows = [
-    { item: "Ato / Sinal na Assinatura:", val: formatCurrency(plan.sinal), obs: "Entrada inicial" },
-    {
-      item: `Parcelas Mensais de Obra (${plan.mensais.qtd}x):`,
-      val: `${formatCurrency(plan.mensais.valorUnitario)} /mês`,
-      obs: `Total: ${formatCurrency(plan.mensais.total)}`,
-    },
-    {
-      item: `Balões / Reforços (${plan.reforcos.qtd}x):`,
-      val: plan.reforcos.qtd > 0 ? `${formatCurrency(plan.reforcos.valorUnitario)} /reforço` : "Sem reforços",
-      obs: `Total: ${formatCurrency(plan.reforcos.total)}`,
-    },
-    { item: "Parcela na Entrega das Chaves:", val: formatCurrency(plan.chaves), obs: "Habite-se" },
-    { item: "Estimativa de ITBI & Registro (Cartório):", val: formatCurrency(plan.escrituraEstimada), obs: "Aproximado" },
-  ];
-
-  let planY = currentY - 65;
-  planRows.forEach((r) => {
-    page.drawText(r.item, {
-      x: 55,
-      y: planY,
-      size: 9,
-      font: fontRegular,
-      color: grayLight,
-    });
-    page.drawText(r.val, {
-      x: 280,
-      y: planY,
-      size: 9,
-      font: fontBold,
-      color: white,
-    });
-    page.drawText(r.obs, {
-      x: 440,
-      y: planY,
-      size: 8,
-      font: fontRegular,
-      color: grayLight,
-    });
-    planY -= 19;
-  });
-
-  currentY -= 190;
-
-  // 5. Cláusula de Validade e Assinaturas
-  page.drawText(
-    "OBSERVAÇÕES: Os valores simulados dependem de aprovação cadastral e documental junto à Caixa Econômica Federal e à construtora. Valores sujeitos a correção monetária por INCC até as chaves.",
-    {
-      x: 40,
-      y: currentY - 10,
-      size: 7.5,
-      font: fontRegular,
-      color: grayLight,
-      maxWidth: width - 80,
-      lineHeight: 11,
+    if (data.conjugeTelefone) {
+      phones.push(`${data.conjugeNome?.split(" ")[0] || "CÔNJUGE"}: ${data.conjugeTelefone}`);
     }
-  );
+    if (phones.length > 0) {
+      obs = `TELEFONES: ${phones.join(" / ")}`;
+    }
+  }
+  setFieldSafely("Observacoes_Condicoes_Especiais", obs);
 
-  currentY -= 60;
+  // 7. Local e Data
+  setFieldSafely("Local_Cidade", (data.cidade || "CRICIÚMA").toUpperCase());
+  setFieldSafely("Data_Dia", data.dataDia || defaultDia);
+  setFieldSafely("Data_Mes", (data.dataMes || defaultMes).toUpperCase());
+  setFieldSafely("Data_Ano", data.dataAno || defaultAno);
 
-  // Linhas de assinatura
-  page.drawLine({
-    start: { x: 70, y: currentY },
-    end: { x: 250, y: currentY },
-    thickness: 1,
-    color: grayDark,
-  });
-  page.drawText(data.clientName, {
-    x: 70,
-    y: currentY - 14,
-    size: 8,
-    font: fontBold,
-    color: white,
-  });
-  page.drawText("Comprador(a)", {
-    x: 70,
-    y: currentY - 26,
-    size: 8,
-    font: fontRegular,
-    color: grayLight,
-  });
-
-  page.drawLine({
-    start: { x: 340, y: currentY },
-    end: { x: 520, y: currentY },
-    thickness: 1,
-    color: grayDark,
-  });
-  page.drawText(data.corretorName, {
-    x: 340,
-    y: currentY - 14,
-    size: 8,
-    font: fontBold,
-    color: white,
-  });
-  page.drawText(`Corretor Responsável • CRECI ${data.creci}`, {
-    x: 340,
-    y: currentY - 26,
-    size: 8,
-    font: fontRegular,
-    color: grayLight,
-  });
+  // Flattening para que os campos sejam embutidos no PDF como no screenshot
+  form.flatten();
 
   return await pdfDoc.save();
 }

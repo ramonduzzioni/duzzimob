@@ -5,20 +5,26 @@ export async function POST(req: NextRequest) {
   try {
     const data: ProposalPdfData = await req.json();
 
-    if (!data.clientName || !data.simulation) {
+    const client = data.compradorNome || data.clientName;
+    if (!client) {
       return NextResponse.json(
-        { error: "Dados incompletos para geração de proposta." },
+        { error: "Nome do comprador/proponente é obrigatório." },
         { status: 400 }
       );
     }
 
     const pdfBytes = await generateProposalPdf(data);
 
+    const safeName = client
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "_");
+
     return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename=proposta-${data.proposalNumber || "duzzimob"}.pdf`,
+        "Content-Disposition": `attachment; filename=proposta-${safeName}.pdf`,
       },
     });
   } catch (err: unknown) {

@@ -20,11 +20,13 @@ export async function POST(req: NextRequest) {
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9_-]/g, "_");
 
+    const filenameSuffix = data.isEditable ? "-editavel" : "";
+
     return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename=proposta-${safeName}.pdf`,
+        "Content-Disposition": `attachment; filename=proposta-${safeName}${filenameSuffix}.pdf`,
       },
     });
   } catch (err: unknown) {

@@ -66,6 +66,9 @@ export interface ProposalPdfData {
   dataMes?: string;
   dataAno?: string;
 
+  // Modo de geração (Editável vs Bloqueado/Achatado)
+  isEditable?: boolean;
+
   // Dados legados de simulação caso enviados
   simulation?: SimulationResult;
   clientPhone?: string;
@@ -233,8 +236,10 @@ export async function generateProposalPdf(data: ProposalPdfData): Promise<Uint8A
   setFieldSafely("Data_Mes", (data.dataMes || defaultMes).toUpperCase());
   setFieldSafely("Data_Ano", data.dataAno || defaultAno);
 
-  // Flattening para que os campos sejam embutidos no PDF como no screenshot
-  form.flatten();
+  // Se não for solicitado PDF editável, achata os campos para fixação permanente
+  if (!data.isEditable) {
+    form.flatten();
+  }
 
   return await pdfDoc.save();
 }

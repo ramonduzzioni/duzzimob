@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   Info,
   FileText,
+  FileEdit,
   DollarSign,
   TrendingDown,
   Calendar,
@@ -90,8 +91,8 @@ export default function SimulationsPage() {
   );
 
   // Loading states
-  const [isGeneratingPdf, setIsGeneratingPdf] = React.useState(false);
-  const [pdfSuccess, setPdfSuccess] = React.useState(false);
+  const [generatingMode, setGeneratingMode] = React.useState<"normal" | "editable" | null>(null);
+  const [pdfSuccessMessage, setPdfSuccessMessage] = React.useState<string | null>(null);
 
   // Recalculate on any input change
   const simulation: SimulationResult = React.useMemo(() => {
@@ -118,10 +119,10 @@ export default function SimulationsPage() {
     sinalPercent,
   ]);
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = async (isEditable: boolean = false) => {
     try {
-      setIsGeneratingPdf(true);
-      setPdfSuccess(false);
+      setGeneratingMode(isEditable ? "editable" : "normal");
+      setPdfSuccessMessage(null);
 
       const payload = {
         proposalNumber: `P-${Date.now().toString().slice(-4)}`,
@@ -158,6 +159,7 @@ export default function SimulationsPage() {
         dataDia,
         dataMes,
         dataAno,
+        isEditable,
         simulation,
       };
 
@@ -173,19 +175,20 @@ export default function SimulationsPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `proposta-${compradorNome.replace(/\s+/g, "_")}.pdf`;
+      const suffix = isEditable ? "_editavel" : "";
+      a.download = `proposta-${compradorNome.replace(/\s+/g, "_")}${suffix}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      setPdfSuccess(true);
-      setTimeout(() => setPdfSuccess(false), 4000);
+      setPdfSuccessMessage(isEditable ? "PDF Editável Baixado!" : "PDF Baixado com Sucesso!");
+      setTimeout(() => setPdfSuccessMessage(null), 4000);
     } catch (err) {
       console.error(err);
       alert("Falha ao gerar o PDF. Verifique os dados e tente novamente.");
     } finally {
-      setIsGeneratingPdf(false);
+      setGeneratingMode(null);
     }
   };
 
@@ -207,25 +210,47 @@ export default function SimulationsPage() {
           </p>
         </div>
 
-        <Button
-          onClick={handleDownloadPdf}
-          disabled={isGeneratingPdf}
-          className="rounded-full shadow-sm dark:shadow-[0_0_20px_rgba(204,255,0,0.3)] text-xs font-semibold"
-        >
-          {isGeneratingPdf ? (
-            "Gerando Proposta Oficial..."
-          ) : pdfSuccess ? (
-            <>
-              <CheckCircle2 className="h-4 w-4" />
-              Proposta Baixada!
-            </>
-          ) : (
-            <>
-              <Download className="h-4 w-4 mr-1" />
-              Emitir Proposta em PDF
-            </>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {pdfSuccessMessage && (
+            <Badge variant="success" className="text-xs py-1 px-3 gap-1.5 animate-in fade-in">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {pdfSuccessMessage}
+            </Badge>
           )}
-        </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleDownloadPdf(true)}
+            disabled={generatingMode !== null}
+            className="rounded-full text-xs font-semibold"
+          >
+            {generatingMode === "editable" ? (
+              "Gerando Editável..."
+            ) : (
+              <>
+                <FileEdit className="h-4 w-4 mr-1 text-emerald-600 dark:text-[#ccff00]" />
+                Gerar PDF Editável
+              </>
+            )}
+          </Button>
+
+          <Button
+            type="button"
+            onClick={() => handleDownloadPdf(false)}
+            disabled={generatingMode !== null}
+            className="rounded-full shadow-sm dark:shadow-[0_0_20px_rgba(204,255,0,0.3)] text-xs font-semibold"
+          >
+            {generatingMode === "normal" ? (
+              "Gerando PDF..."
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-1" />
+                Gerar PDF
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -730,7 +755,7 @@ export default function SimulationsPage() {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-border flex items-center justify-between">
+            <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="text-xs text-muted-foreground">
                 <span>1ª Parcela Caixa estimada: </span>
                 <strong className="text-foreground font-mono">
@@ -738,15 +763,30 @@ export default function SimulationsPage() {
                 </strong>
               </div>
 
-              <Button
-                onClick={handleDownloadPdf}
-                disabled={isGeneratingPdf}
-                size="sm"
-                className="rounded-full shadow-sm"
-              >
-                <Download className="h-4 w-4 mr-1.5" />
-                Baixar Proposta Oficial em PDF
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleDownloadPdf(true)}
+                  disabled={generatingMode !== null}
+                  size="sm"
+                  className="rounded-full text-xs"
+                >
+                  <FileEdit className="h-3.5 w-3.5 mr-1 text-emerald-600 dark:text-[#ccff00]" />
+                  {generatingMode === "editable" ? "Gerando..." : "Gerar PDF Editável"}
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => handleDownloadPdf(false)}
+                  disabled={generatingMode !== null}
+                  size="sm"
+                  className="rounded-full shadow-sm text-xs"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  {generatingMode === "normal" ? "Gerando..." : "Gerar PDF"}
+                </Button>
+              </div>
             </div>
           </Card>
         </div>

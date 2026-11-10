@@ -24,6 +24,7 @@ import {
   MapPin,
   Building2,
   Percent,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -218,6 +219,55 @@ export default function SimulationsPage() {
     }
   };
 
+  const handleResetSimulation = () => {
+    if (confirm("Deseja realmente limpar todos os campos desta simulação e iniciar uma nova?")) {
+      // Valores financeiros base
+      setPropertyValue(250000);
+      setGrossIncome(5000);
+      setBirthDate("1994-05-15");
+      setCidade("Criciúma");
+      setUf("SC");
+      setTetoMcmvPersonalizado(undefined);
+      setHasFgts3Years(true);
+      setCustomRateEffective(undefined);
+      setIsEditingRate(false);
+      setFgtsValue(0);
+      setUseFgtsAsX(true);
+      setSystemType("SAC");
+      setTermMonths(420);
+      setBuilderMonths(36);
+      setBuilderReforcos(0);
+      setSinalPercent(10);
+
+      // Dados do Imóvel limpos
+      setConstrutoraEmpreendimento("");
+      setUnidadeApartamento("");
+      setGaragemBox("");
+      setOutrasInformacoes("");
+
+      // Dados do Comprador limpos
+      setCompradorNome("");
+      setCompradorCpf("");
+      setCompradorRg("");
+      setCompradorEstadoCivil("SOLTEIRO(A)");
+      setCompradorProfissao("");
+      setCompradorEmail("");
+      setCompradorTelefone("");
+
+      // Dados do Cônjuge limpos
+      setHasConjuge(false);
+      setConjugeNome("");
+      setConjugeCpf("");
+      setConjugeRg("");
+      setConjugeProfissao("");
+      setConjugeEmail("");
+      setConjugeTelefone("");
+
+      setObservacoes("");
+      setPdfSuccessMessage(null);
+    }
+  };
+
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-8">
       {/* Top Header & Dual PDF Download Actions */}
@@ -243,6 +293,17 @@ export default function SimulationsPage() {
               {pdfSuccessMessage}
             </Badge>
           )}
+
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleResetSimulation}
+            className="rounded-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+            title="Limpar formulário e iniciar uma nova simulação"
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+            Limpar / Nova
+          </Button>
 
           <Button
             type="button"
@@ -1026,6 +1087,18 @@ export default function SimulationsPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleResetSimulation}
+                  size="sm"
+                  className="rounded-full text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+                  title="Limpar formulário e iniciar uma nova simulação"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+                  Limpar
+                </Button>
+
                 <Button
                   type="button"
                   variant="outline"

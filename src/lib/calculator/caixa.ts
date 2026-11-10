@@ -7,6 +7,7 @@ export interface SimulationInput {
   referenceDate?: Date; // Data base para cálculo de idade
   cidade?: string;
   uf?: string;
+  tetoMcmvPersonalizado?: number; // Permite sobrepor o teto oficial do município
   fgtsValue?: number;
   systemType?: SimulationSystem;
   termMonths?: number;
@@ -14,6 +15,17 @@ export interface SimulationInput {
   builderInstallmentsCount?: number;
   builderReforcosCount?: number;
   sinalPercent?: number;
+}
+
+export interface MunicipioMcmvInfo {
+  cidade: string;
+  uf: string;
+  tetoFaixa1e2: number;
+  tetoFaixa3: number;
+  tetoFaixa4: number;
+  porteDescricao: string;
+  enquadramentoMcmv: "FAIXA_1_2" | "FAIXA_3" | "FAIXA_4" | "SBPE";
+  motivoEnquadramento: string;
 }
 
 export interface EncargosCaixa {
@@ -33,6 +45,8 @@ export interface SimulationResult {
   interestRateAnnual: number;
   interestRateMonthly: number;
   caixaFaixaId: number;
+  caixaFaixaNome: string;
+  municipioInfo: MunicipioMcmvInfo;
   maxFinancingValue: number; // 80% do valor do imóvel
   approvedFinancingValue: number; // limitado a 30% da renda líquida de encargos
   subsidyValue: number;
@@ -171,33 +185,197 @@ export function getTaxaMipPorIdade(idadeAnos: number): number {
   return found ? found.taxa : 0.0154;
 }
 
-/**
- * Identifica a faixa de taxa da Caixa por Renda e Valor do Imóvel
- */
-export function getFaixaCaixa(renda: number, valorImovel: number) {
-  const idxRenda = CAIXA_CONFIG.faixas.findIndex((f) => renda <= f.limiteRenda);
-  const idxImovel = CAIXA_CONFIG.faixas.findIndex((f) => valorImovel <= f.limiteImovel);
-  const maxIdx = Math.max(
-    idxRenda >= 0 ? idxRenda : CAIXA_CONFIG.faixas.length - 1,
-    idxImovel >= 0 ? idxImovel : CAIXA_CONFIG.faixas.length - 1
-  );
-  return CAIXA_CONFIG.faixas[maxIdx];
+export interface TetoMunicipioConfig {
+  tetoFaixa1e2: number;
+  porteDescricao: string;
+  uf: string;
+}
+
+// Mapeamento Oficial de Tetos MCMV (Faixas 1 e 2) por Município / Porte Populacional
+export const MCMV_TETOS_CONHECIDOS: Record<string, TetoMunicipioConfig> = {
+  // Santa Catarina - Sul e Região Carbonífera
+  "criciuma": { tetoFaixa1e2: 250000, porteDescricao: "Polo Regional Sul Catarinense (>215k hab)", uf: "SC" },
+  "tubarao": { tetoFaixa1e2: 240000, porteDescricao: "Médio Porte Polo AMUREL", uf: "SC" },
+  "icara": { tetoFaixa1e2: 230000, porteDescricao: "Região Carbonífera / Conurbação Criciúma", uf: "SC" },
+  "forquilhinha": { tetoFaixa1e2: 220000, porteDescricao: "Região Carbonífera", uf: "SC" },
+  "ararangua": { tetoFaixa1e2: 230000, porteDescricao: "Polo Vale do Araranguá", uf: "SC" },
+  "urussanga": { tetoFaixa1e2: 210000, porteDescricao: "Região Carbonífera", uf: "SC" },
+  "cocal do sul": { tetoFaixa1e2: 210000, porteDescricao: "Região Carbonífera", uf: "SC" },
+  "morro da fumaca": { tetoFaixa1e2: 210000, porteDescricao: "Região Carbonífera", uf: "SC" },
+  "sombrio": { tetoFaixa1e2: 210000, porteDescricao: "Extremo Sul Catarinense", uf: "SC" },
+  "nova veneza": { tetoFaixa1e2: 210000, porteDescricao: "Região Carbonífera", uf: "SC" },
+  "laguna": { tetoFaixa1e2: 220000, porteDescricao: "Litoral Sul AMUREL", uf: "SC" },
+  "imbituba": { tetoFaixa1e2: 230000, porteDescricao: "Polo Portuário Sul", uf: "SC" },
+
+  // Santa Catarina - Demais Regiões
+  "florianopolis": { tetoFaixa1e2: 275000, porteDescricao: "Capital / Região Metropolitana", uf: "SC" },
+  "sao jose": { tetoFaixa1e2: 275000, porteDescricao: "Região Metropolitana da Capital", uf: "SC" },
+  "palhoca": { tetoFaixa1e2: 275000, porteDescricao: "Região Metropolitana da Capital", uf: "SC" },
+  "biguacu": { tetoFaixa1e2: 275000, porteDescricao: "Região Metropolitana da Capital", uf: "SC" },
+  "joinville": { tetoFaixa1e2: 270000, porteDescricao: "Grande Porte (>600k hab)", uf: "SC" },
+  "blumenau": { tetoFaixa1e2: 260000, porteDescricao: "Grande Porte Vale do Itajaí", uf: "SC" },
+  "itajai": { tetoFaixa1e2: 260000, porteDescricao: "Polo Portuário / Foz do Itajaí", uf: "SC" },
+  "balneario camboriu": { tetoFaixa1e2: 260000, porteDescricao: "Litoral Norte / Alto Custo", uf: "SC" },
+  "camboriu": { tetoFaixa1e2: 250000, porteDescricao: "Conurbação Balneário Camboriú", uf: "SC" },
+  "navegantes": { tetoFaixa1e2: 250000, porteDescricao: "Conurbação Foz do Itajaí", uf: "SC" },
+  "brusque": { tetoFaixa1e2: 245000, porteDescricao: "Polo Têxtil / Médio Porte", uf: "SC" },
+  "chapeco": { tetoFaixa1e2: 250000, porteDescricao: "Polo Oeste Catarinense", uf: "SC" },
+  "lages": { tetoFaixa1e2: 240000, porteDescricao: "Polo Planalto Serrano", uf: "SC" },
+  "jaragua do sul": { tetoFaixa1e2: 250000, porteDescricao: "Polo Industrial Norte", uf: "SC" },
+
+  // Capitais e Metrópoles Nacionais
+  "sao paulo": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Nacional", uf: "SP" },
+  "rio de janeiro": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Nacional", uf: "RJ" },
+  "brasilia": { tetoFaixa1e2: 275000, porteDescricao: "Distrito Federal / Capital", uf: "DF" },
+  "belo horizonte": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Regional", uf: "MG" },
+  "curitiba": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Regional", uf: "PR" },
+  "porto alegre": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Regional", uf: "RS" },
+  "salvador": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Regional", uf: "BA" },
+  "fortaleza": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Regional", uf: "CE" },
+  "recife": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Regional", uf: "PE" },
+  "goiania": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Regional", uf: "GO" },
+  "manaus": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Regional", uf: "AM" },
+  "belem": { tetoFaixa1e2: 275000, porteDescricao: "Metrópole Regional", uf: "PA" },
+  "campinas": { tetoFaixa1e2: 275000, porteDescricao: "Região Metropolitana Campinas", uf: "SP" },
+  "santos": { tetoFaixa1e2: 270000, porteDescricao: "Baixada Santista", uf: "SP" },
+  "sorocaba": { tetoFaixa1e2: 265000, porteDescricao: "Grande Porte Interior SP", uf: "SP" },
+  "londrina": { tetoFaixa1e2: 260000, porteDescricao: "Polo Norte Paranaense", uf: "PR" },
+  "maringa": { tetoFaixa1e2: 260000, porteDescricao: "Polo Noroeste Paranaense", uf: "PR" },
+  "caxias do sul": { tetoFaixa1e2: 260000, porteDescricao: "Polo Industrial Serra Gaúcha", uf: "RS" },
+};
+
+export function normalizeCityName(cityName: string): string {
+  return cityName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 }
 
 /**
- * Estima o subsídio habitacional (MCMV) com base na renda e porte do município
+ * Obtém os tetos do Minha Casa Minha Vida por Município
  */
-export function estimateSubsidy(income: number, propertyValue: number, cidade?: string): number {
-  // Se o imóvel for superior a 350 mil, não se enquadra em subsídio MCMV
-  if (propertyValue > 350000) return 0;
+export function getMunicipioMcmvInfo(
+  cidade?: string,
+  uf?: string,
+  tetoOverride?: number
+): MunicipioMcmvInfo {
+  const rawCity = (cidade || "Criciúma").trim();
+  const rawUf = (uf || "SC").trim().toUpperCase();
+  const normCity = normalizeCityName(rawCity);
+  const found = MCMV_TETOS_CONHECIDOS[normCity];
 
-  // Cidades polo/médias como Criciúma ou capitais têm teto de subsídio até R$ 55.000
-  const maxSubsidio = 55000;
+  let tetoFaixa1e2 = 210000;
+  let porteDescricao = "Município Geral (Interior / População < 100k)";
+
+  if (found) {
+    tetoFaixa1e2 = found.tetoFaixa1e2;
+    porteDescricao = found.porteDescricao;
+  } else if (normCity.includes("capital") || ["SP", "RJ", "DF"].includes(rawUf)) {
+    tetoFaixa1e2 = 275000;
+    porteDescricao = "Capital / Metrópole Regional";
+  }
+
+  // Se o corretor informou um teto personalizado
+  if (tetoOverride && tetoOverride > 0) {
+    tetoFaixa1e2 = tetoOverride;
+    porteDescricao = `Teto Personalizado (R$ ${tetoOverride.toLocaleString("pt-BR")})`;
+  }
+
+  return {
+    cidade: rawCity,
+    uf: rawUf,
+    tetoFaixa1e2,
+    tetoFaixa3: 400000, // Teto Nacional MCMV Faixa 3
+    tetoFaixa4: 600000, // Teto Nacional MCMV Faixa 4
+    porteDescricao,
+    enquadramentoMcmv: "FAIXA_1_2",
+    motivoEnquadramento: "",
+  };
+}
+
+/**
+ * Gera as faixas da Caixa ajustadas ao Teto MCMV específico do município
+ */
+export function getFaixasCaixaParaMunicipio(tetoFaixa1e2: number) {
+  return [
+    { id: 1, nome: "MCMV Faixa 1 (Sub 1)", limiteRenda: 2160, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.048548 },
+    { id: 2, nome: "MCMV Faixa 1 (Sub 2)", limiteRenda: 2850, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.051162 },
+    { id: 3, nome: "MCMV Faixa 2 (Sub 1)", limiteRenda: 3200, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.053782 },
+    { id: 4, nome: "MCMV Faixa 2 (Sub 2)", limiteRenda: 3500, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.056408 },
+    { id: 5, nome: "MCMV Faixa 2 (Sub 3)", limiteRenda: 4000, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.061678 },
+    { id: 6, nome: "MCMV Faixa 2 (Sub 4)", limiteRenda: 5000, limiteImovel: tetoFaixa1e2, taxaEfetiva: 0.07229 },
+    { id: 7, nome: "MCMV Faixa 3 / Pró-Cotista", limiteRenda: 9600, limiteImovel: 400000, taxaEfetiva: 0.084722 },
+    { id: 8, nome: "MCMV Faixa 4 / SBPE Especial", limiteRenda: 13000, limiteImovel: 600000, taxaEfetiva: 0.1047 },
+    { id: 9, nome: "SBPE Mercado Tradicional", limiteRenda: 77500, limiteImovel: 2250000, taxaEfetiva: 0.1149 },
+    { id: 10, nome: "Carteira Hipotecária / Livre", limiteRenda: Infinity, limiteImovel: Infinity, taxaEfetiva: 0.134 },
+  ];
+}
+
+/**
+ * Identifica a faixa de taxa da Caixa por Renda, Valor do Imóvel e Teto da Cidade.
+ * REGRA CAIXA: O teto do município altera a faixa e, consequentemente, a taxa de juros!
+ */
+export function getFaixaCaixa(renda: number, valorImovel: number, tetoFaixa1e2: number = 250000) {
+  const faixas = getFaixasCaixaParaMunicipio(tetoFaixa1e2);
+  const idxRenda = faixas.findIndex((f) => renda <= f.limiteRenda);
+  const idxImovel = faixas.findIndex((f) => valorImovel <= f.limiteImovel);
+
+  const safeIdxRenda = idxRenda >= 0 ? idxRenda : faixas.length - 1;
+  const safeIdxImovel = idxImovel >= 0 ? idxImovel : faixas.length - 1;
+
+  // A regra mestra da Caixa: o teto do imóvel empurra a faixa se o imóvel ultrapassar o limite municipal!
+  const finalIdx = Math.max(safeIdxRenda, safeIdxImovel);
+  const faixa = faixas[finalIdx];
+
+  let enquadramentoMcmv: "FAIXA_1_2" | "FAIXA_3" | "FAIXA_4" | "SBPE" = "FAIXA_1_2";
+  let motivoEnquadramento = "";
+
+  if (finalIdx <= 5) {
+    enquadramentoMcmv = "FAIXA_1_2";
+    motivoEnquadramento = `Imóvel (R$ ${valorImovel.toLocaleString("pt-BR")}) dentro do teto MCMV municipal (R$ ${tetoFaixa1e2.toLocaleString("pt-BR")}) e renda familiar elegível para Faixa 1/2 com taxa social subsidiada de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+  } else if (finalIdx === 6) {
+    enquadramentoMcmv = "FAIXA_3";
+    if (safeIdxImovel > safeIdxRenda) {
+      motivoEnquadramento = `O imóvel (R$ ${valorImovel.toLocaleString("pt-BR")}) ultrapassou o teto de Faixa 1/2 do município (R$ ${tetoFaixa1e2.toLocaleString("pt-BR")}). Reenquadrado para MCMV Faixa 3 (Teto até R$ 400.000), elevando a taxa para ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a. sem direito a subsídio.`;
+    } else {
+      motivoEnquadramento = `Enquadrado no MCMV Faixa 3 por renda familiar (R$ ${renda.toLocaleString("pt-BR")}), com taxa de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+    }
+  } else if (finalIdx === 7) {
+    enquadramentoMcmv = "FAIXA_4";
+    if (safeIdxImovel > safeIdxRenda) {
+      motivoEnquadramento = `O imóvel (R$ ${valorImovel.toLocaleString("pt-BR")}) ultrapassou o teto do MCMV Faixa 3 (R$ 400.000). Reenquadrado para Faixa 4 (Classe Média até R$ 600.000) com taxa de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+    } else {
+      motivoEnquadramento = `Enquadrado na Faixa 4 / Classe Média por renda com taxa de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+    }
+  } else {
+    enquadramentoMcmv = "SBPE";
+    motivoEnquadramento = `Financiamento SBPE / Mercado tradicional (fora do programa MCMV), com taxa de ${(faixa.taxaEfetiva * 100).toFixed(2)}% a.a.`;
+  }
+
+  return {
+    ...faixa,
+    enquadramentoMcmv,
+    motivoEnquadramento,
+  };
+}
+
+/**
+ * Estima o subsídio habitacional (MCMV) com base na renda e no teto municipal do imóvel
+ */
+export function estimateSubsidy(income: number, propertyValue: number, tetoFaixa1e2: number): number {
+  // Regra Caixa: Se o imóvel for superior ao teto do município para Faixa 1 e 2, NÃO HÁ SUBSÍDIO
+  if (propertyValue > tetoFaixa1e2) return 0;
+  // Se a renda for superior a R$ 4.400,00, não há subsídio
+  if (income > 4400) return 0;
+
+  // Cidades polo/médias com teto >= 250.000 têm subsídio teto de até R$ 55.000
+  const maxSubsidio = tetoFaixa1e2 >= 250000 ? 55000 : 47500;
 
   if (income <= 2160) return maxSubsidio;
   if (income <= 2850) {
     const factor = (2850 - income) / (2850 - 2160);
-    return Math.round(30000 + factor * 25000);
+    return Math.round(30000 + factor * (maxSubsidio - 30000));
   }
   if (income <= 3500) {
     const factor = (3500 - income) / (3500 - 2850);
@@ -241,21 +419,27 @@ export function calculateCaixaSimulation(input: SimulationInput): SimulationResu
   const appliedTermMonths = Math.min(requestedTerm, maxCaixaTermMonths);
   const safeTermMonths = Math.max(1, appliedTermMonths);
 
-  // 2. Faixa e Taxa de Juros Caixa
-  const faixa = getFaixaCaixa(grossIncome, propertyValue);
+  // 2. Diagnóstico do Município e Teto MCMV Oficial
+  const municipioInfo = getMunicipioMcmvInfo(cidade, uf, input.tetoMcmvPersonalizado);
+
+  // 3. Faixa e Taxa de Juros Caixa (REGRA CAIXA: o teto do município altera a faixa e a taxa)
+  const faixa = getFaixaCaixa(grossIncome, propertyValue, municipioInfo.tetoFaixa1e2);
+  municipioInfo.enquadramentoMcmv = faixa.enquadramentoMcmv;
+  municipioInfo.motivoEnquadramento = faixa.motivoEnquadramento;
+
   const interestRateAnnual = input.interestRateAnnual || Number((faixa.taxaEfetiva * 100).toFixed(2));
   const interestRateMonthly = Math.pow(1 + interestRateAnnual / 100, 1 / 12) - 1;
 
-  // 3. Sistema de Amortização
+  // 4. Sistema de Amortização
   // Regra Caixa: Se juros >= 10.92%, padrão é SAC. Caso contrário, permite escolha
   let systemType: SimulationSystem = input.systemType || (interestRateAnnual >= 10.92 ? "SAC" : "PRICE");
 
-  // 4. Encargos Fixos e de Seguros Mensais da Caixa
+  // 5. Encargos Fixos e de Seguros Mensais da Caixa
   const taxaMipPercent = getTaxaMipPorIdade(ageYears);
   const tac = CAIXA_CONFIG.taxaTAC; // R$ 25,00
   const dfi = (CAIXA_CONFIG.taxaDFI / 100) * propertyValue; // 0.0066% do imóvel
 
-  // 5. Limite de Financiamento por Renda (Comprometimento Máximo de 30%)
+  // 6. Limite de Financiamento por Renda (Comprometimento Máximo de 30%)
   const maxMonthlyPaymentAllowed = grossIncome * CAIXA_CONFIG.percentualMaximoComprometimentoRenda;
   const maxLtvValue = Math.round(propertyValue * CAIXA_CONFIG.percentualMaximoFinanciamento);
 
@@ -306,8 +490,8 @@ export function calculateCaixaSimulation(input: SimulationInput): SimulationResu
         )
       : 0;
 
-  // Subsídio MCMV
-  const subsidyValue = estimateSubsidy(grossIncome, propertyValue, cidade);
+  // Subsídio MCMV (considera o teto de Faixa 1/2 do município)
+  const subsidyValue = estimateSubsidy(grossIncome, propertyValue, municipioInfo.tetoFaixa1e2);
 
   // Saldo de Entrada com a Construtora (Gap)
   const totalCredits = approvedFinancingValue + subsidyValue + fgtsValue;
@@ -343,6 +527,8 @@ export function calculateCaixaSimulation(input: SimulationInput): SimulationResu
     interestRateAnnual,
     interestRateMonthly,
     caixaFaixaId: faixa.id,
+    caixaFaixaNome: faixa.nome,
+    municipioInfo,
     maxFinancingValue: maxLtvValue,
     approvedFinancingValue,
     subsidyValue,

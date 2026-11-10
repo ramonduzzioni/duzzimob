@@ -22,6 +22,7 @@ import {
   Check,
   Clock,
   MapPin,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ export default function SimulationsPage() {
   const [birthDate, setBirthDate] = React.useState<string>("1994-05-15"); // 30 anos por padrão
   const [cidade, setCidade] = React.useState<string>("Criciúma");
   const [uf, setUf] = React.useState<string>("SC");
+  const [tetoMcmvPersonalizado, setTetoMcmvPersonalizado] = React.useState<number | undefined>(undefined);
   const [fgtsValue, setFgtsValue] = React.useState<number>(0);
   const [useFgtsAsX, setUseFgtsAsX] = React.useState<boolean>(true);
   const [systemType, setSystemType] = React.useState<SimulationSystem>("SAC");
@@ -111,6 +113,7 @@ export default function SimulationsPage() {
       referenceDate,
       cidade,
       uf,
+      tetoMcmvPersonalizado,
       fgtsValue,
       systemType,
       termMonths,
@@ -125,6 +128,7 @@ export default function SimulationsPage() {
     referenceDate,
     cidade,
     uf,
+    tetoMcmvPersonalizado,
     fgtsValue,
     systemType,
     termMonths,
@@ -280,8 +284,8 @@ export default function SimulationsPage() {
           <p className="text-2xl font-bold text-foreground font-mono">
             {formatCurrency(simulation.approvedFinancingValue)}
           </p>
-          <p className="text-[10px] text-muted-foreground">
-            Taxa: <strong className="text-foreground">{simulation.interestRateAnnual}% a.a.</strong> (Faixa {simulation.caixaFaixaId})
+          <p className="text-[10px] text-muted-foreground truncate" title={simulation.caixaFaixaNome}>
+            Taxa: <strong className="text-foreground">{simulation.interestRateAnnual}% a.a.</strong> ({simulation.caixaFaixaNome})
           </p>
         </div>
 
@@ -485,25 +489,118 @@ export default function SimulationsPage() {
                 </span>
               </div>
 
-              {/* Cidade e UF */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="col-span-2">
-                  <label className="text-muted-foreground block mb-1 font-medium">Cidade do Imóvel</label>
-                  <input
-                    type="text"
-                    value={cidade}
-                    onChange={(e) => setCidade(e.target.value)}
-                    className="w-full h-9 px-2.5 rounded-xl bg-muted border border-border text-foreground text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
-                  />
+              {/* Cidade, UF e Teto MCMV Municipal */}
+              <div className="sm:col-span-2 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                  <div className="sm:col-span-8">
+                    <label className="text-muted-foreground block mb-1 font-medium flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="h-3 w-3 text-emerald-600 dark:text-[#ccff00]" />
+                        Cidade do Imóvel (Define Teto MCMV)
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      list="cidades-sc-lista"
+                      value={cidade}
+                      onChange={(e) => {
+                        const novaCidade = e.target.value;
+                        setCidade(novaCidade);
+                        setTetoMcmvPersonalizado(undefined);
+                      }}
+                      className="w-full h-9 px-3 rounded-xl bg-muted border border-border text-foreground text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
+                      placeholder="Digite a cidade (ex: Criciúma, Florianópolis, Tubarão...)"
+                    />
+                    <datalist id="cidades-sc-lista">
+                      <option value="Criciúma" />
+                      <option value="Tubarão" />
+                      <option value="Içara" />
+                      <option value="Forquilhinha" />
+                      <option value="Araranguá" />
+                      <option value="Florianópolis" />
+                      <option value="São José" />
+                      <option value="Palhoça" />
+                      <option value="Joinville" />
+                      <option value="Blumenau" />
+                      <option value="Itajaí" />
+                      <option value="Balneário Camboriú" />
+                      <option value="Brusque" />
+                      <option value="Chapecó" />
+                      <option value="Lages" />
+                      <option value="Jaraguá do Sul" />
+                      <option value="São Paulo" />
+                      <option value="Curitiba" />
+                      <option value="Porto Alegre" />
+                    </datalist>
+                  </div>
+
+                  <div className="sm:col-span-4">
+                    <label className="text-muted-foreground block mb-1 font-medium">UF</label>
+                    <input
+                      type="text"
+                      value={uf}
+                      onChange={(e) => setUf(e.target.value.toUpperCase())}
+                      className="w-full h-9 px-2.5 rounded-xl bg-muted border border-border text-foreground text-xs uppercase font-mono focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
+                      maxLength={2}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-muted-foreground block mb-1 font-medium">UF</label>
-                  <input
-                    type="text"
-                    value={uf}
-                    onChange={(e) => setUf(e.target.value)}
-                    className="w-full h-9 px-2.5 rounded-xl bg-muted border border-border text-foreground text-xs uppercase focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
-                  />
+
+                {/* Card de Diagnóstico do Teto MCMV e Impacto na Taxa de Juros */}
+                <div className="p-3 rounded-xl bg-muted/60 border border-border space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2">
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <Building2 className="h-3.5 w-3.5 text-emerald-600 dark:text-[#ccff00]" />
+                      <span className="font-semibold text-foreground">
+                        Teto MCMV Faixas 1 e 2 ({simulation.municipioInfo.cidade}):
+                      </span>
+                      <strong className="text-emerald-600 dark:text-[#ccff00] font-mono">
+                        {formatCurrency(simulation.municipioInfo.tetoFaixa1e2)}
+                      </strong>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span className="text-muted-foreground text-[10px]">
+                        {simulation.municipioInfo.porteDescricao}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = prompt(
+                            `Teto atual: R$ ${simulation.municipioInfo.tetoFaixa1e2.toLocaleString("pt-BR")}.\nDigite o novo teto para ${cidade} (R$):`,
+                            String(simulation.municipioInfo.tetoFaixa1e2)
+                          );
+                          if (val && !isNaN(Number(val))) {
+                            setTetoMcmvPersonalizado(Number(val));
+                          }
+                        }}
+                        className="text-[10px] text-emerald-600 dark:text-[#ccff00] hover:underline cursor-pointer"
+                      >
+                        Ajustar Teto
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Impacto Direto na Faixa e Taxa de Juros */}
+                  <div
+                    className={`p-2 rounded-lg text-[11px] leading-relaxed flex items-start gap-2 ${
+                      propertyValue > simulation.municipioInfo.tetoFaixa1e2
+                        ? "bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300"
+                        : "bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300"
+                    }`}
+                  >
+                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold">
+                        {propertyValue > simulation.municipioInfo.tetoFaixa1e2
+                          ? "Reenquadramento de Faixa por Teto Municipal"
+                          : "Enquadrado Dentro do Teto MCMV Municipal"}
+                      </p>
+                      <p className="text-[10.5px] opacity-90 mt-0.5">
+                        {simulation.municipioInfo.motivoEnquadramento}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 

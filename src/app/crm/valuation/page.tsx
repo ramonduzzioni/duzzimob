@@ -22,8 +22,12 @@ import {
   ArrowDownRight,
   ShieldCheck,
   Layers,
-  ChevronDown,
   Building,
+  Award,
+  Calendar,
+  UserCheck,
+  Briefcase,
+  Compass,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -52,23 +56,23 @@ import { IMOVEL_PADRAO_EXEMPLO, AMOSTRAS_INICIAIS_PLANILHA } from "@/lib/valuati
 import { calculateValuation } from "@/lib/valuation/engine";
 
 export default function ValuationPage() {
-  // Estado do Imóvel Avaliando (com todas as variáveis da planilha)
+  // Estado do Imóvel Avaliando (estruturado conforme normas do COFECI / ABNT)
   const [imovel, setImovel] = React.useState<ImovelAvaliando>(IMOVEL_PADRAO_EXEMPLO);
 
-  // Estado das Amostras de Mercado
+  // Amostras Coletadas no Mercado
   const [amostras, setAmostras] = React.useState<
     Array<Omit<AmostraMercado, "valorM2" | "isHomogeneizada" | "motivoDescarte">>
   >(AMOSTRAS_INICIAIS_PLANILHA);
 
-  // Margem de Tolerância Estatística (10%, 15% NBR padrão, 20%)
+  // Campo de Arbítrio / Intervalo de Saneamento da NBR 14.653
   const [toleranciaPercent, setToleranciaPercent] = React.useState<number>(15);
 
-  // Aba Ativa
+  // Navegação do Módulo Pericial
   const [activeTab, setActiveTab] = React.useState<
     "imovel" | "bairro_condo" | "amostras" | "estatistica" | "vistoria" | "laudo"
   >("imovel");
 
-  // Data de Parecer (inicializada no client para evitar SSR hydration mismatch)
+  // Data formatada para apresentação
   const [dataParecerFormatada, setDataParecerFormatada] = React.useState("21/09/2022");
 
   React.useEffect(() => {
@@ -82,7 +86,7 @@ export default function ValuationPage() {
     setDataParecerFormatada(new Date().toLocaleDateString("pt-BR"));
   }, [imovel.dataParecer]);
 
-  // Cálculo reativo usando o motor estatístico da NBR 14.653
+  // Motor Estatístico de Engenharia de Avaliações (NBR 14.653)
   const { amostrasProcessadas, estatisticas } = React.useMemo(() => {
     return calculateValuation({
       imovel,
@@ -97,14 +101,14 @@ export default function ValuationPage() {
     const newSample: Omit<AmostraMercado, "valorM2" | "isHomogeneizada" | "motivoDescarte"> = {
       id: String(Date.now()),
       codigo: `A.${nextIndex}`,
-      proprietarioOuFonte: "Oferta Nova",
+      proprietarioOuFonte: "Nova Oferta Coletada",
       bairro: imovel.bairro || "Centro",
       cidade: imovel.cidade || "Criciúma",
       quartos: 3,
       vagas: 2,
       areaUtilM2: 180,
       valorOferta: 900000,
-      anotacoes: "Em análise",
+      anotacoes: "Imóvel comparável na mesma microrregião",
     };
     setAmostras([...amostras, newSample]);
   };
@@ -121,14 +125,14 @@ export default function ValuationPage() {
 
   const handleRemoveSample = (id: string) => {
     if (amostras.length <= 3) {
-      alert("A NBR 14.653 recomenda manter pelo menos 3 a 5 amostras para validade estatística.");
+      alert("A norma técnica ABNT NBR 14.653 exige no mínimo 3 a 5 amostras para manter a fundamentação pericial.");
       return;
     }
     setAmostras(amostras.filter((a) => a.id !== id));
   };
 
-  const handleResetToDefault = () => {
-    if (confirm("Deseja restaurar as 15 amostras e todos os dados originais da planilha de teste de Criciúma?")) {
+  const handleLoadReferenceStudy = () => {
+    if (confirm("Deseja carregar o estudo de caso completo com 15 amostras e laudo de vistoria técnica?")) {
       setImovel(IMOVEL_PADRAO_EXEMPLO);
       setAmostras(AMOSTRAS_INICIAIS_PLANILHA);
       setToleranciaPercent(15);
@@ -136,7 +140,7 @@ export default function ValuationPage() {
   };
 
   const handleClearAll = () => {
-    if (confirm("Deseja limpar todos os campos para iniciar uma nova avaliação do zero?")) {
+    if (confirm("Deseja iniciar um novo laudo de avaliação em branco?")) {
       setImovel({
         ...IMOVEL_PADRAO_EXEMPLO,
         proponente: "",
@@ -147,8 +151,8 @@ export default function ValuationPage() {
         bairro: "",
         matricula: "",
         cartorio: "",
-        areaConstruidaM2: 100,
-        areaTerrenoM2: 250,
+        areaConstruidaM2: 120,
+        areaTerrenoM2: 300,
         demaisBenfeitoriasValor: 0,
         fatorApreciacaoPercent: 0,
       });
@@ -164,7 +168,6 @@ export default function ValuationPage() {
     window.print();
   };
 
-  // Formatação
   const formatBRL = (val: number) => {
     return (val || 0).toLocaleString("pt-BR", {
       style: "currency",
@@ -184,20 +187,20 @@ export default function ValuationPage() {
 
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
-      {/* Top Header */}
+      {/* Top Header Institucional */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5 print:hidden">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
               <Scale className="h-6 w-6 text-emerald-500 dark:text-[#ccff00]" />
-              Avaliação de Imóveis (PTAM)
+              Parecer Técnico de Avaliação Mercadológica (PTAM)
             </h1>
-            <Badge variant="default" className="text-xs bg-emerald-500/10 text-emerald-600 dark:bg-[#ccff00]/10 dark:text-[#ccff00] border-emerald-500/20 dark:border-[#ccff00]/20">
-              NBR 14.653-2 Completa
+            <Badge variant="default" className="text-xs bg-emerald-500/10 text-emerald-600 dark:bg-[#ccff00]/10 dark:text-[#ccff00] border-emerald-500/20 dark:border-[#ccff00]/20 font-bold">
+              ABNT NBR 14.653-2
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Parecer Técnico de Avaliação Mercadológica com 100% dos quesitos da planilha oficial (Cadastrais, Terreno, Vistoria, Prédio e MCDDM).
+            Sistema pericial de engenharia de avaliações em conformidade com a Resolução COFECI nº 1.066/2007.
           </p>
         </div>
 
@@ -205,12 +208,12 @@ export default function ValuationPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={handleResetToDefault}
+            onClick={handleLoadReferenceStudy}
             className="text-xs h-9 gap-1.5"
-            title="Recarrega todos os dados e as 15 amostras originais da planilha"
+            title="Carrega um caso de avaliação completo com 15 amostras e vistoria"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            Dados da Planilha Excel
+            Exemplo de Avaliação
           </Button>
           <Button
             size="sm"
@@ -219,32 +222,32 @@ export default function ValuationPage() {
             className="text-xs h-9 gap-1.5"
           >
             <Plus className="h-3.5 w-3.5" />
-            Nova Avaliação
+            Novo Laudo
           </Button>
           <Button
             size="sm"
             onClick={handlePrint}
-            className="text-xs h-9 gap-1.5 bg-[#ccff00] text-black hover:bg-[#b8e600] font-semibold"
+            className="text-xs h-9 gap-1.5 bg-[#ccff00] text-black hover:bg-[#b8e600] font-bold shadow-sm"
           >
             <Printer className="h-3.5 w-3.5" />
-            Imprimir Laudo PTAM
+            Emitir Laudo Pericial (PDF)
           </Button>
         </div>
       </div>
 
-      {/* STRIP DE KPIS PRINCIPAIS (Painel de Formação de Preço) */}
+      {/* STRIP DE KPIS PRINCIPAIS (Painel de Valores Conclusivos) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-4">
-        {/* Preço para Fechar (Venda Rápida) */}
+        {/* Preço para Fechar (Venda Rápida / Liquidação Justa) */}
         <Card className="border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none" />
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                 <ArrowDownRight className="h-4 w-4 text-emerald-500" />
-                Preço para Fechar
+                Fechamento Rápido
               </span>
               <Badge className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[10px] px-1.5 py-0 border-0">
-                Liquidez Rápida
+                Alta Liquidez
               </Badge>
             </div>
             <CardTitle className="text-2xl font-black tracking-tight text-foreground mt-1">
@@ -252,18 +255,18 @@ export default function ValuationPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-[11px] text-muted-foreground pt-0">
-            Base líquida (-5%) para fechamento imediato na mesa de negociação.
+            Margem sadia (-5%) para fechamento em até 30 a 60 dias sem desvalorizar o bem.
           </CardContent>
         </Card>
 
-        {/* Preço de Avaliação Técnico (Base Mercadológica) */}
+        {/* Preço de Avaliação Técnico (Valor de Mercado Médio) */}
         <Card className="border border-[#ccff00]/40 bg-[#ccff00]/5 dark:bg-[#ccff00]/10 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-[#ccff00]/15 rounded-full blur-2xl -mr-8 -mt-8 pointer-events-none" />
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                 <Scale className="h-4 w-4 text-[#ccff00]" />
-                Avaliação Base
+                Valor Técnico Pericial
               </span>
               <Badge className="bg-[#ccff00] text-black font-semibold text-[10px] px-1.5 py-0 border-0">
                 Valor Justo
@@ -275,7 +278,7 @@ export default function ValuationPage() {
           </CardHeader>
           <CardContent className="text-[11px] text-muted-foreground pt-0 flex items-center justify-between">
             <span>{formatM2(estatisticas.valorM2Apreciado)}/m²</span>
-            <span className="font-medium text-foreground">{imovel.areaConstruidaM2} m² úteis</span>
+            <span className="font-medium text-foreground">{imovel.areaConstruidaM2} m² privativos</span>
           </CardContent>
         </Card>
 
@@ -286,10 +289,10 @@ export default function ValuationPage() {
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
                 <ArrowUpRight className="h-4 w-4 text-blue-500" />
-                Preço para Anunciar
+                Preço de Anúncio
               </span>
               <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-300 text-[10px] px-1.5 py-0 border-0">
-                +5% Margem
+                Com Margem
               </Badge>
             </div>
             <CardTitle className="text-2xl font-black tracking-tight text-foreground mt-1">
@@ -297,7 +300,7 @@ export default function ValuationPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-[11px] text-muted-foreground pt-0">
-            Preço sugerido para portal/vitrine com margem sadia de contraproposta.
+            Valor de posicionamento em portais e vitrine com margem de negociação na mesa.
           </CardContent>
         </Card>
 
@@ -306,26 +309,26 @@ export default function ValuationPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Layers className="h-4 w-4 text-emerald-500" />
-                Amostragem Válida
+                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                Conformidade Amostral
               </span>
               <Badge variant="outline" className="text-[10px]">
-                ±{toleranciaPercent}% Chauvenet
+                ±{toleranciaPercent}% Campo de Arbítrio
               </Badge>
             </div>
             <CardTitle className="text-2xl font-black tracking-tight text-foreground mt-1 flex items-baseline gap-1.5">
               <span>{estatisticas.amostrasValidas}</span>
-              <span className="text-sm font-normal text-muted-foreground">de {estatisticas.totalAmostras} coletadas</span>
+              <span className="text-sm font-normal text-muted-foreground">de {estatisticas.totalAmostras} comparáveis</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="text-[11px] text-muted-foreground pt-0 flex items-center justify-between">
-            <span>MF: {formatM2(estatisticas.mediaFinalSaneadaM2)}</span>
-            <span className="text-amber-500 font-medium">{estatisticas.amostrasDescartadas} descartadas</span>
+            <span>MF Homog.: {formatM2(estatisticas.mediaFinalSaneadaM2)}</span>
+            <span className="text-amber-500 font-medium">{estatisticas.amostrasDescartadas} dados atípicos</span>
           </CardContent>
         </Card>
       </div>
 
-      {/* NAVEGAÇÃO POR ABAS (Estilo Futurista & Minimalista) */}
+      {/* NAVEGAÇÃO DO MÓDULO PERICIAL */}
       <div className="flex items-center gap-2 border-b border-border overflow-x-auto pb-2 scrollbar-none print:hidden">
         <button
           type="button"
@@ -337,7 +340,7 @@ export default function ValuationPage() {
           }`}
         >
           <Home className="h-4 w-4" />
-          1. Imóvel & Terreno
+          1. Identificação & Terreno
         </button>
 
         <button
@@ -350,7 +353,7 @@ export default function ValuationPage() {
           }`}
         >
           <Building className="h-4 w-4" />
-          2. Microrregião & Prédio
+          2. Região & Infraestrutura
         </button>
 
         <button
@@ -363,7 +366,7 @@ export default function ValuationPage() {
           }`}
         >
           <Building2 className="h-4 w-4" />
-          3. Amostras de Mercado ({amostras.length})
+          3. Pesquisa Amostral ({amostras.length})
         </button>
 
         <button
@@ -376,7 +379,7 @@ export default function ValuationPage() {
           }`}
         >
           <Sliders className="h-4 w-4" />
-          4. Saneamento Estatístico
+          4. Diagnóstico Estatístico NBR
         </button>
 
         <button
@@ -389,7 +392,7 @@ export default function ValuationPage() {
           }`}
         >
           <CheckCircle2 className="h-4 w-4" />
-          5. Vistoria (Quesitos 7.1 a 7.5)
+          5. Vistoria & Diagnóstico
         </button>
 
         <button
@@ -402,38 +405,37 @@ export default function ValuationPage() {
           }`}
         >
           <FileText className="h-4 w-4" />
-          6. Laudo Pericial (PTAM)
+          6. Parecer Conclusivo (PTAM)
         </button>
       </div>
 
       {/* ============================================================== */}
-      {/* ABA 1: IMÓVEL & TERRENO (Seções 1, 2, 4 e 5 da planilha)        */}
+      {/* ABA 1: IDENTIFICAÇÃO DO BEM E CARACTERIZAÇÃO DO TERRENO        */}
       {/* ============================================================== */}
       {activeTab === "imovel" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Coluna 1 & 2: Identificação, Terreno e Unidade */}
           <div className="lg:col-span-2 space-y-6">
-            {/* 1. Solicitante & Identificação */}
+            {/* 1 & 2. Solicitante e Identificação do Bem */}
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-3 border-b border-border/50">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-[#ccff00]" />
-                  1 & 2. Solicitante e Identificação do Imóvel
+                  Identificação do Solicitante e Registro Imobiliário
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Dados do proponente, objetivo e dados cartorários conforme planilha.
+                  Qualificação do proponente, finalidade avaliatória e dados de registro em cartório.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="sm:col-span-2">
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Solicitante / Proponente
+                    Solicitante / Proprietário do Bem
                   </label>
                   <input
                     type="text"
                     value={imovel.proponente}
                     onChange={(e) => setImovel({ ...imovel, proponente: e.target.value })}
-                    placeholder="Nome completo do solicitante"
+                    placeholder="Nome completo do proprietário"
                     className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   />
                 </div>
@@ -453,52 +455,39 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Objetivo da Avaliação
+                    Finalidade da Avaliação
                   </label>
                   <input
                     type="text"
                     value={imovel.objetivo}
                     onChange={(e) => setImovel({ ...imovel, objetivo: e.target.value })}
-                    placeholder="Ex: Avaliação para a venda"
+                    placeholder="Ex: Determinação de Valor de Mercado para Alienação"
                     className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Endereço Completo do Imóvel
+                    Logradouro / Endereço
                   </label>
                   <input
                     type="text"
                     value={imovel.endereco}
                     onChange={(e) => setImovel({ ...imovel, endereco: e.target.value })}
-                    placeholder="Rua, avenida, travessa..."
+                    placeholder="Rua, avenida, praça..."
                     className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Número
+                    Número / Complemento
                   </label>
                   <input
                     type="text"
                     value={imovel.numero}
                     onChange={(e) => setImovel({ ...imovel, numero: e.target.value })}
-                    placeholder="Ex: 120 ou S/N"
-                    className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Complemento
-                  </label>
-                  <input
-                    type="text"
-                    value={imovel.complemento}
-                    onChange={(e) => setImovel({ ...imovel, complemento: e.target.value })}
-                    placeholder="Ex: Casa, Apto 302"
+                    placeholder="Ex: 120 / Casa"
                     className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   />
                 </div>
@@ -511,14 +500,14 @@ export default function ValuationPage() {
                     type="text"
                     value={imovel.bairro}
                     onChange={(e) => setImovel({ ...imovel, bairro: e.target.value })}
-                    placeholder="Ex: Laranjinha"
+                    placeholder="Ex: Jardim Maristela"
                     className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Cidade
+                    Município
                   </label>
                   <input
                     type="text"
@@ -570,7 +559,7 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Data Emissão Matrícula
+                    Data da Certidão de Matrícula
                   </label>
                   <input
                     type="date"
@@ -582,15 +571,15 @@ export default function ValuationPage() {
               </CardContent>
             </Card>
 
-            {/* 4. Dados do Terreno */}
+            {/* Geometria e Caracterização do Terreno */}
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-3 border-b border-border/50">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-[#ccff00]" />
-                  4. Dados do Terreno (Planilha Seção 4)
+                  <Compass className="h-4 w-4 text-[#ccff00]" />
+                  Caracterização do Terreno e Geometria do Lote
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Área total, testada, cota greide, topografia, superfície e formato.
+                  Dimensões periciais, testada, cota greide, formato geométrico e relevo.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -635,7 +624,7 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Situação na Quadra
+                    Posição na Quadra
                   </label>
                   <select
                     value={imovel.situacaoQuadra}
@@ -674,7 +663,7 @@ export default function ValuationPage() {
                     onChange={(e) => setImovel({ ...imovel, cotaGreide: e.target.value as CotaGreide })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="mesmo_nivel">Mesmo Nível da Via</option>
+                    <option value="mesmo_nivel">Mesmo Nível do Logradouro</option>
                     <option value="aclive_10">Aclive 10%</option>
                     <option value="declive_10">Declive 10%</option>
                     <option value="acima">Acima do Nível</option>
@@ -684,51 +673,51 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Superfície
+                    Condição do Solo / Superfície
                   </label>
                   <select
                     value={imovel.superficieTerreno}
                     onChange={(e) => setImovel({ ...imovel, superficieTerreno: e.target.value as SuperficieTerreno })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="seco">Seco</option>
-                    <option value="brejo">Brejo</option>
-                    <option value="alagavel">Alagável</option>
+                    <option value="seco">Seco / Firme</option>
+                    <option value="brejo">Brejo / Úmido</option>
+                    <option value="alagavel">Sujeito a Alagamento</option>
                     <option value="outra">Outra</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Formato
+                    Formato Perimetral
                   </label>
                   <select
                     value={imovel.formatoTerreno}
                     onChange={(e) => setImovel({ ...imovel, formatoTerreno: e.target.value as FormatoTerreno })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="regular">Regular</option>
+                    <option value="regular">Regular (Retangular/Poligonal)</option>
                     <option value="irregular">Irregular</option>
                   </select>
                 </div>
               </CardContent>
             </Card>
 
-            {/* 5. Dados da Unidade Avalianda */}
+            {/* Descrição Detalhada da Unidade Avalianda */}
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-3 border-b border-border/50">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-[#ccff00]" />
-                  5. Dados da Unidade Avalianda (Planilha Seção 5)
+                  Descrição Física da Edificação e Acabamentos
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Tipologia, cômodos, fechamento de paredes, conservação e acabamentos.
+                  Tipologia construtiva, distribuição de cômodos, fechamentos estruturais e padrão.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="col-span-2">
                   <label className="text-xs font-bold text-foreground mb-1 flex items-center justify-between">
-                    <span>Área Útil / Privativa (m²)*</span>
+                    <span>Área Construída Privativa (m²)*</span>
                     <Badge className="bg-[#ccff00] text-black text-[10px]">Variável Mestra</Badge>
                   </label>
                   <input
@@ -742,20 +731,20 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Tipo do Imóvel
+                    Tipologia
                   </label>
                   <select
                     value={imovel.tipo}
                     onChange={(e) => setImovel({ ...imovel, tipo: e.target.value as TipoImovel })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="casa">Casa</option>
-                    <option value="apartamento">Apartamento</option>
+                    <option value="casa">Casa Unifamiliar</option>
+                    <option value="apartamento">Apartamento Padrão</option>
                     <option value="sobrado">Sobrado</option>
                     <option value="duplex">Duplex</option>
                     <option value="cobertura">Cobertura</option>
                     <option value="loft">Loft</option>
-                    <option value="kitnet">Kitnet</option>
+                    <option value="kitnet">Kitnet / Studio</option>
                     <option value="terreno">Terreno</option>
                     <option value="comercial">Comercial</option>
                   </select>
@@ -771,10 +760,10 @@ export default function ValuationPage() {
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
                     <option value="convencional">Convencional</option>
-                    <option value="isolada_centro">Isolada / Centro do Terreno</option>
-                    <option value="isolada_frente">Isolada / Frente do Terreno</option>
+                    <option value="isolada_centro">Isolada no Centro do Terreno</option>
+                    <option value="isolada_frente">Isolada na Frente do Terreno</option>
                     <option value="geminada_lateral">Geminada em uma Lateral</option>
-                    <option value="geminada_laterais">Geminada nas Laterais</option>
+                    <option value="geminada_laterais">Geminada em Ambas as Laterais</option>
                     <option value="junto_fundos">Junto aos Fundos</option>
                     <option value="ocupa_todo_terreno">Ocupa Todo o Terreno</option>
                   </select>
@@ -782,16 +771,16 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Posição na Edificação
+                    Posicionamento Solar / Fachada
                   </label>
                   <select
                     value={imovel.posicaoEdificacao}
                     onChange={(e) => setImovel({ ...imovel, posicaoEdificacao: e.target.value as PosicaoEdificacao })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="frente">Frente</option>
+                    <option value="frente">Frente para Via Pública</option>
                     <option value="frente_canto">Frente / Canto</option>
-                    <option value="meio">Meio</option>
+                    <option value="meio">Meio / Centro</option>
                     <option value="fundos">Fundos</option>
                     <option value="fundos_canto">Fundos / Canto</option>
                     <option value="lateral">Lateral</option>
@@ -800,16 +789,16 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Situação de Ocupação
+                    Regime de Ocupação
                   </label>
                   <select
                     value={imovel.ocupacao}
                     onChange={(e) => setImovel({ ...imovel, ocupacao: e.target.value as SituacaoOcupacao })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="ocupado_proprietario">Ocupado</option>
-                    <option value="desocupado">Desocupado</option>
-                    <option value="locado_arrendado">Locado / Arrendado</option>
+                    <option value="ocupado_proprietario">Ocupado pelo Proprietário</option>
+                    <option value="desocupado">Desocupado / Vago</option>
+                    <option value="locado_arrendado">Locado a Terceiros</option>
                     <option value="cedido_comodato">Cedido / Comodato</option>
                     <option value="invadido">Invadido</option>
                     <option value="em_implantacao">Em Implantação</option>
@@ -831,7 +820,7 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Nº Pavimentos Unidade
+                    Nº Pavimentos da Unidade
                   </label>
                   <input
                     type="number"
@@ -844,7 +833,7 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Quartos (sem suíte)
+                    Dormitórios (sem suíte)
                   </label>
                   <input
                     type="number"
@@ -857,7 +846,7 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Nº Suítes
+                    Suítes
                   </label>
                   <input
                     type="number"
@@ -916,7 +905,7 @@ export default function ValuationPage() {
                     onChange={(e) => setImovel({ ...imovel, padrao: e.target.value as PadraoConstrutivo })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="minimo">Mínimo</option>
+                    <option value="minimo">Mínimo / Econômico</option>
                     <option value="baixo">Baixo</option>
                     <option value="medio">Normal / Médio</option>
                     <option value="alto">Alto</option>
@@ -933,45 +922,45 @@ export default function ValuationPage() {
                     onChange={(e) => setImovel({ ...imovel, estadoConservacao: e.target.value as EstadoConservacao })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="novo">Novo</option>
-                    <option value="otimo">Ótimo</option>
-                    <option value="bom">Bom</option>
+                    <option value="novo">Novo / Primeira Ocupação</option>
+                    <option value="otimo">Ótimo Estado</option>
+                    <option value="bom">Bom Estado</option>
                     <option value="regular">Regular</option>
-                    <option value="ruim">Ruim</option>
+                    <option value="ruim">Necessita Reparos Importantes</option>
                     <option value="em_construcao">Em Construção</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Fechamento de Paredes
+                    Fechamento Estrutural de Paredes
                   </label>
                   <select
                     value={imovel.fechamentoParede}
                     onChange={(e) => setImovel({ ...imovel, fechamentoParede: e.target.value as FechamentoParede })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="alvenaria">Alvenaria</option>
-                    <option value="concreto">Parede de Concreto</option>
-                    <option value="drywall">Drywall</option>
-                    <option value="madeira">Madeira</option>
-                    <option value="outro">Outro</option>
+                    <option value="alvenaria">Alvenaria Convencional</option>
+                    <option value="concreto">Paredes de Concreto Armado</option>
+                    <option value="drywall">Drywall / Gesso Acartonado</option>
+                    <option value="madeira">Madeira Nobre / Tratada</option>
+                    <option value="outro">Outro Sistema</option>
                   </select>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Coluna 3: Apreciação e Parâmetros */}
+          {/* Coluna 3: Fatores de Apreciação e Parâmetros Avaliatórios */}
           <div className="space-y-6">
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-3 border-b border-border/50">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-[#ccff00]" />
-                  Apreciação & Benfeitorias
+                  Apreciação Pericial & Benfeitorias
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Fator percentual de apreciação em relação a outras ofertas.
+                  Fator de ponderação aplicado sobre o m² homogeneizado por diferenciais físicos.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
@@ -979,7 +968,7 @@ export default function ValuationPage() {
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                       <Percent className="h-3.5 w-3.5 text-[#ccff00]" />
-                      Fator de Apreciação (%)
+                      Fator de Ponderação / Padrão (%)
                     </label>
                     <span className="text-xs font-bold px-2 py-0.5 rounded bg-muted">
                       {imovel.fatorApreciacaoPercent > 0 ? `+${imovel.fatorApreciacaoPercent}%` : `${imovel.fatorApreciacaoPercent}%`}
@@ -995,13 +984,13 @@ export default function ValuationPage() {
                     className="w-full accent-[#ccff00] cursor-pointer"
                   />
                   <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
-                    Parâmetro da planilha: <strong>+15%</strong> devido ao estado de conservação e localização superior à média das ofertas.
+                    Fator pericial de <strong>+{imovel.fatorApreciacaoPercent}%</strong> refletindo estado de conservação, acabamento e orientação solar superiores à amostra média.
                   </p>
                 </div>
 
                 <div className="pt-2 border-t border-border/50">
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Demais Benfeitorias (R$)
+                    Benfeitorias Exclusivas Não Computadas na Área (R$)
                   </label>
                   <input
                     type="number"
@@ -1009,24 +998,24 @@ export default function ValuationPage() {
                     step="5000"
                     value={imovel.demaisBenfeitoriasValor}
                     onChange={(e) => setImovel({ ...imovel, demaisBenfeitoriasValor: Number(e.target.value) || 0 })}
-                    placeholder="Ex: 0"
+                    placeholder="Ex: 0 (Piscina aquecida, usina solar)"
                     className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   />
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    Valor somado diretamente ao valor final do imóvel.
+                    Equipamentos que agregam valor fechado além da área construída.
                   </p>
                 </div>
 
                 <div className="pt-2 border-t border-border/50">
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Taxa de Condomínio Mensal (R$)
+                    Cota Condominial Mensal (R$)
                   </label>
                   <input
                     type="number"
                     min="0"
                     value={imovel.taxaCondominioMensal}
                     onChange={(e) => setImovel({ ...imovel, taxaCondominioMensal: Number(e.target.value) || 0 })}
-                    placeholder="Ex: 350"
+                    placeholder="Ex: 0"
                     className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   />
                 </div>
@@ -1051,19 +1040,19 @@ export default function ValuationPage() {
             <Card className="border border-border bg-muted/20">
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Média das Amostras (MF):</span>
+                  <span className="text-muted-foreground">Média Homogeneizada (MF):</span>
                   <span className="font-semibold">{formatM2(estatisticas.mediaFinalSaneadaM2)}/m²</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Fator de Apreciação:</span>
+                  <span className="text-muted-foreground">Ponderação de Padrão:</span>
                   <span className="font-semibold text-emerald-500">+{imovel.fatorApreciacaoPercent}%</span>
                 </div>
                 <div className="flex items-center justify-between text-xs border-t border-border pt-2 font-bold text-foreground">
-                  <span>Valor Viável do m² Calculado:</span>
+                  <span>Valor Unitário Final Adotado:</span>
                   <span className="text-[#ccff00]">{formatM2(estatisticas.valorM2Apreciado)}/m²</span>
                 </div>
                 <div className="flex items-center justify-between text-xs border-t border-border pt-2 font-bold text-foreground">
-                  <span>Valor de Avaliação do Imóvel:</span>
+                  <span>Valor Técnico do Imóvel:</span>
                   <span>{formatBRL(estatisticas.valorAvaliacaoBase)}</span>
                 </div>
               </CardContent>
@@ -1073,26 +1062,25 @@ export default function ValuationPage() {
       )}
 
       {/* ============================================================== */}
-      {/* ABA 2: MICRORREGIÃO & DADOS DO PRÉDIO (Seções 3 e 6)           */}
+      {/* ABA 2: REGIÃO, EQUIPAMENTOS PÚBLICOS E INFRAESTRUTURA          */}
       {/* ============================================================== */}
       {activeTab === "bairro_condo" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Seção 3: Microrregião & Infraestrutura */}
           <div className="space-y-6">
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-3 border-b border-border/50">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-[#ccff00]" />
-                  3. Microrregião do Imóvel Avaliado
+                  Diagnóstico da Microrregião e Dinâmica de Mercado
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Uso predominante, padrão do bairro, acesso e liquidez de mercado.
+                  Vocação imobiliária predominante, condições de acesso e velocidade de absorção.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4 grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Uso Predominante
+                    Uso Predominante do Bairro
                   </label>
                   <select
                     value={imovel.usoPredominante}
@@ -1102,15 +1090,15 @@ export default function ValuationPage() {
                     <option value="comercial">Comercial</option>
                     <option value="unifamiliar">Residencial Unifamiliar</option>
                     <option value="multifamiliar">Residencial Multifamiliar</option>
-                    <option value="industrial">Industrial</option>
                     <option value="misto">Misto</option>
-                    <option value="terreno">Terreno</option>
+                    <option value="industrial">Industrial</option>
+                    <option value="terreno">Glebas / Terrenos</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Padrão Construtivo Predom.
+                    Padrão Construtivo do Entorno
                   </label>
                   <select
                     value={imovel.padraoConstrutivoPredominante}
@@ -1120,14 +1108,14 @@ export default function ValuationPage() {
                     <option value="medio">Normal / Médio</option>
                     <option value="baixo">Baixo</option>
                     <option value="minimo">Mínimo</option>
-                    <option value="alto">Alto</option>
+                    <option value="alto">Alto Padrão</option>
                     <option value="luxo">Luxo</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Acesso ao Imóvel
+                    Condições de Acesso
                   </label>
                   <select
                     value={imovel.acessoBairro}
@@ -1143,37 +1131,37 @@ export default function ValuationPage() {
 
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Desempenho do Mercado
+                    Comportamento do Mercado
                   </label>
                   <select
                     value={imovel.desempenhoMercado}
                     onChange={(e) => setImovel({ ...imovel, desempenhoMercado: e.target.value as any })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="recessivo">Recessivo</option>
-                    <option value="normal">Normal</option>
-                    <option value="aquecido">Aquecido</option>
+                    <option value="recessivo">Mercado Recessivo</option>
+                    <option value="normal">Mercado Equilibrado / Normal</option>
+                    <option value="aquecido">Mercado Aquecido / Alta Demanda</option>
                   </select>
                 </div>
 
                 <div className="col-span-2">
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                    Absorção / Liquidez pelo Mercado
+                    Velocidade Média de Absorção do Mercado Local
                   </label>
                   <select
                     value={imovel.absorcaoMercado}
                     onChange={(e) => setImovel({ ...imovel, absorcaoMercado: e.target.value as any })}
                     className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   >
-                    <option value="baixa_mais_6m">Baixa (Superior a 6 meses)</option>
-                    <option value="media_3_a_6m">Média (Entre 3 e 6 meses)</option>
-                    <option value="alta_ate_3m">Alta (Inferior a 3 meses)</option>
+                    <option value="baixa_mais_6m">Baixa Absorção (Superior a 6 meses para venda)</option>
+                    <option value="media_3_a_6m">Média Absorção (Entre 3 e 6 meses para venda)</option>
+                    <option value="alta_ate_3m">Alta Absorção (Giro rápido inferior a 3 meses)</option>
                   </select>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Infraestrutura Urbana e Serviços */}
+            {/* Redes e Equipamentos Urbanos */}
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-3 border-b border-border/50">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -1181,27 +1169,27 @@ export default function ValuationPage() {
                   Infraestrutura Urbana & Serviços Comunitários
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Redes disponíveis na via pública do lote (Itens da Seção 3 da planilha).
+                  Redes de serviços públicos e comunitários instalados na via pública.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4 grid grid-cols-2 gap-2 text-xs">
                 {[
-                  { label: "Rede Água Potável", key: "temAguaPotavel", defaultVal: true },
-                  { label: "Rede Elétrica", key: "temEnergiaEletrica", defaultVal: true },
-                  { label: "Telefonia", key: "temTelefonia", defaultVal: true },
-                  { label: "Iluminação Pública", key: "temIluminacaoPublica", defaultVal: true },
-                  { label: "Rede Água Pluvial", key: "temAguaPluvial", defaultVal: true },
-                  { label: "Rede de Esgoto", key: "temEsgoto", defaultVal: true },
-                  { label: "Pavimentação", key: "temPavimentacao", defaultVal: true },
-                  { label: "Gás Canalizado", key: "temGasCanalizado", defaultVal: true },
-                  { label: "Comércio", key: "temComercio", defaultVal: true },
-                  { label: "Rede Bancária", key: "temRedeBancaria", defaultVal: true },
-                  { label: "Saúde / Posto", key: "temSaude", defaultVal: true },
-                  { label: "Lazer / Praças", key: "temLazer", defaultVal: true },
-                  { label: "Transporte Coletivo", key: "temTransporteColetivo", defaultVal: true },
-                  { label: "Segurança Pública", key: "temSegurancaPublica", defaultVal: true },
-                  { label: "Coleta de Lixo", key: "temColetaLixo", defaultVal: true },
-                  { label: "Escolas", key: "temEscolas", defaultVal: true },
+                  { label: "Rede de Água Tratada", key: "temAguaPotavel" },
+                  { label: "Rede Elétrica e Iluminação", key: "temEnergiaEletrica" },
+                  { label: "Rede Telefônica / Dados", key: "temTelefonia" },
+                  { label: "Iluminação Pública em Poste", key: "temIluminacaoPublica" },
+                  { label: "Drenagem Pluvial Subterrânea", key: "temAguaPluvial" },
+                  { label: "Rede Coletora de Esgoto", key: "temEsgoto" },
+                  { label: "Pavimentação Definitiva", key: "temPavimentacao" },
+                  { label: "Gás Canalizado Subterrâneo", key: "temGasCanalizado" },
+                  { label: "Comércio Varejista Consolidado", key: "temComercio" },
+                  { label: "Agências / Postos Bancários", key: "temRedeBancaria" },
+                  { label: "Unidades Básicas de Saúde", key: "temSaude" },
+                  { label: "Equipamentos de Lazer / Parques", key: "temLazer" },
+                  { label: "Transporte Coletivo com Paradas", key: "temTransporteColetivo" },
+                  { label: "Postos Policiais / Ronda", key: "temSegurancaPublica" },
+                  { label: "Coleta Regular de Resíduos", key: "temColetaLixo" },
+                  { label: "Rede de Ensino / Creches", key: "temEscolas" },
                 ].map((item) => (
                   <label
                     key={item.key}
@@ -1220,16 +1208,16 @@ export default function ValuationPage() {
             </Card>
           </div>
 
-          {/* Seção 6: Dados do Prédio / Condomínio */}
+          {/* Dados do Condomínio / Empreendimento */}
           <div className="space-y-6">
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-3 border-b border-border/50">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-[#ccff00]" />
-                  6. Dados do Prédio / Condomínio (Planilha Seção 6)
+                  Condomínio, Fachada & Prevenção contra Sinistros
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Estrutura do edifício, fachada, esquadrias, lazer e proteção contra incêndio.
+                  Especificações do empreendimento, revestimentos e sistemas de emergência.
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
@@ -1259,37 +1247,36 @@ export default function ValuationPage() {
                       onChange={(e) => setImovel({ ...imovel, predioEsquadrias: e.target.value as any })}
                       className="w-full px-2 py-1.5 text-xs rounded bg-background border border-border"
                     >
-                      <option value="aluminio">Alumínio</option>
-                      <option value="madeira">Madeira</option>
-                      <option value="pvc">PVC</option>
+                      <option value="aluminio">Alumínio Anodizado</option>
+                      <option value="madeira">Madeira Nobre</option>
+                      <option value="pvc">PVC Termoacústico</option>
                       <option value="vidro_temperado">Vidro Temperado</option>
-                      <option value="ferro">Ferro</option>
+                      <option value="ferro">Ferro / Aço</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                      Revestimento Fachada
+                      Revestimento Externo
                     </label>
                     <select
                       value={imovel.predioRevestimentoFachada}
                       onChange={(e) => setImovel({ ...imovel, predioRevestimentoFachada: e.target.value as any })}
                       className="w-full px-2 py-1.5 text-xs rounded bg-background border border-border"
                     >
-                      <option value="textura">Textura</option>
-                      <option value="pintura">Pintura</option>
-                      <option value="ceramica">Cerâmica</option>
-                      <option value="granito">Granito</option>
+                      <option value="textura">Textura Acrílica</option>
+                      <option value="pintura">Pintura Especial</option>
+                      <option value="ceramica">Pastilha Cerâmica</option>
+                      <option value="granito">Granito / Porcelanato</option>
                       <option value="marmore">Mármore</option>
-                      <option value="pele_vidro">Lâmina de Vidro</option>
+                      <option value="pele_vidro">Pele / Lâmina de Vidro</option>
                     </select>
                   </div>
                 </div>
 
-                {/* Equipamentos e Lazer do Condomínio */}
                 <div className="pt-2 border-t border-border/50">
                   <span className="text-xs font-bold text-foreground block mb-2">
-                    Infraestrutura, Lazer e Serviços do Prédio:
+                    Lazer e Serviços Coletivos:
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                     {[
@@ -1297,15 +1284,15 @@ export default function ValuationPage() {
                       { label: "Playground", key: "condoPlayground" },
                       { label: "Salão de Festas", key: "condoSalaoFestas" },
                       { label: "Portaria 24 horas", key: "condoPortaria24h" },
-                      { label: "Quadra", key: "condoQuadra" },
-                      { label: "Gerador", key: "condoGerador" },
-                      { label: "Sauna", key: "condoSauna" },
-                      { label: "Interfone", key: "condoInterfone" },
-                      { label: "Churrasqueira", key: "condoChurrasqueira" },
-                      { label: "Portão Eletrônico", key: "condoPortaoEletronico" },
-                      { label: "Poço Artesiano", key: "condoPocoArtesiano" },
-                      { label: "CFTV", key: "condoCftv" },
-                      { label: "Hidrômetro Individ.", key: "condoHidrometroIndividual" },
+                      { label: "Quadra Poliesportiva", key: "condoQuadra" },
+                      { label: "Grupo Gerador", key: "condoGerador" },
+                      { label: "Sauna / Spa", key: "condoSauna" },
+                      { label: "Interfonia Integrada", key: "condoInterfone" },
+                      { label: "Churrasqueira Coletiva", key: "condoChurrasqueira" },
+                      { label: "Portão Automatizado", key: "condoPortaoEletronico" },
+                      { label: "Poço Artesiano Outorgado", key: "condoPocoArtesiano" },
+                      { label: "Circuito CFTV", key: "condoCftv" },
+                      { label: "Hidrômetro Individual", key: "condoHidrometroIndividual" },
                     ].map((item) => (
                       <label
                         key={item.key}
@@ -1323,19 +1310,18 @@ export default function ValuationPage() {
                   </div>
                 </div>
 
-                {/* Proteção contra Incêndio */}
                 <div className="pt-2 border-t border-border/50">
                   <span className="text-xs font-bold text-foreground block mb-2">
-                    Proteção Contra Incêndio:
+                    Prevenção e Combate a Incêndio (AVCB):
                   </span>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     {[
-                      { label: "Extintores", key: "incendioExtintores" },
-                      { label: "Hidrantes", key: "incendioHidrantes" },
-                      { label: "Alarme de Incêndio", key: "incendioAlarme" },
-                      { label: "Escada de Emergência", key: "incendioEscadaEmergencia" },
-                      { label: "Iluminação Emergência", key: "incendioIluminacaoEmergencia" },
-                      { label: "Não Possui", key: "incendioNaoPossui" },
+                      { label: "Extintores Portáteis", key: "incendioExtintores" },
+                      { label: "Rede Hidrante Pressurizada", key: "incendioHidrantes" },
+                      { label: "Central de Alarme e Detecção", key: "incendioAlarme" },
+                      { label: "Escada Pressurizada de Emergência", key: "incendioEscadaEmergencia" },
+                      { label: "Luminárias de Balizamento e Fuga", key: "incendioIluminacaoEmergencia" },
+                      { label: "Não Possui Sistema Específico", key: "incendioNaoPossui" },
                     ].map((item) => (
                       <label
                         key={item.key}
@@ -1359,7 +1345,7 @@ export default function ValuationPage() {
       )}
 
       {/* ============================================================== */}
-      {/* ABA 3: AMOSTRAS DE MERCADO (15 comparáveis)                    */}
+      {/* ABA 3: PESQUISA AMOSTRAL DE MERCADO (Comparáveis)              */}
       {/* ============================================================== */}
       {activeTab === "amostras" && (
         <div className="space-y-4">
@@ -1367,10 +1353,10 @@ export default function ValuationPage() {
             <div>
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-[#ccff00]" />
-                8. Amostras de Mercado (Método Comparativo Direto)
+                Pesquisa Amostral de Mercado (Dados Comparáveis)
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Coleta de ofertas do mercado imobiliário de {imovel.cidade || "Criciúma"}. O motor identifica automaticamente outliers acima do teto ou abaixo do piso.
+                Imóveis assemelhados identificados no mercado de {imovel.cidade || "Criciúma"}. O motor pericial executa a identificação automática de dados atípicos.
               </p>
             </div>
 
@@ -1381,26 +1367,25 @@ export default function ValuationPage() {
                 className="text-xs h-8 gap-1 bg-[#ccff00] text-black hover:bg-[#b8e600] font-semibold"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Nova Amostra
+                Adicionar Comparável
               </Button>
             </div>
           </div>
 
-          {/* Tabela de Amostras */}
           <div className="border border-border rounded-xl overflow-hidden bg-card/60 shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-muted/70 text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border">
                   <tr>
                     <th className="py-2.5 px-3 font-semibold">Cód</th>
-                    <th className="py-2.5 px-3 font-semibold">Proprietário / Imobiliária</th>
-                    <th className="py-2.5 px-3 font-semibold">Bairro</th>
+                    <th className="py-2.5 px-3 font-semibold">Fonte / Imobiliária</th>
+                    <th className="py-2.5 px-3 font-semibold">Bairro / Localização</th>
                     <th className="py-2.5 px-3 font-semibold text-center">Dorm</th>
                     <th className="py-2.5 px-3 font-semibold text-center">Vagas</th>
                     <th className="py-2.5 px-3 font-semibold text-right">Área Útil</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Valor Oferta (R$)</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Valor R$/m²</th>
-                    <th className="py-2.5 px-3 font-semibold text-center">Status NBR</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Valor de Oferta (R$)</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Valor Unitário (R$/m²)</th>
+                    <th className="py-2.5 px-3 font-semibold text-center">Enquadramento NBR</th>
                     <th className="py-2.5 px-2 text-center w-10">Ações</th>
                   </tr>
                 </thead>
@@ -1423,7 +1408,7 @@ export default function ValuationPage() {
                           type="text"
                           value={item.proprietarioOuFonte}
                           onChange={(e) => handleUpdateSample(item.id, "proprietarioOuFonte", e.target.value)}
-                          placeholder="Ex: Imobiliária X"
+                          placeholder="Ex: Fonte da oferta"
                           className="w-full bg-transparent border-b border-transparent hover:border-border focus:border-[#ccff00] focus:outline-none px-1 py-0.5 text-xs text-foreground"
                         />
                       </td>
@@ -1488,7 +1473,7 @@ export default function ValuationPage() {
                         {item.isHomogeneizada ? (
                           <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] gap-1 px-2 py-0.5">
                             <Check className="h-3 w-3" />
-                            Válida NBR
+                            Homogeneizada
                           </Badge>
                         ) : (
                           <Badge
@@ -1496,12 +1481,12 @@ export default function ValuationPage() {
                             className="text-[10px] gap-1 px-2 py-0.5 bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30"
                             title={
                               item.motivoDescarte === "ACIMA_TETO"
-                                ? `Outlier Superior (> ${formatM2(estatisticas.limiteSuperiorM2)})`
-                                : `Outlier Inferior (< ${formatM2(estatisticas.limiteInferiorM2)})`
+                                ? `Dado discrepante acima do limite superior (${formatM2(estatisticas.limiteSuperiorM2)})`
+                                : `Dado discrepante abaixo do limite inferior (${formatM2(estatisticas.limiteInferiorM2)})`
                             }
                           >
                             <AlertCircle className="h-3 w-3" />
-                            {item.motivoDescarte === "ACIMA_TETO" ? "Descarte > Teto" : "Descarte < Piso"}
+                            {item.motivoDescarte === "ACIMA_TETO" ? "Atípico Superior" : "Atípico Inferior"}
                           </Badge>
                         )}
                       </td>
@@ -1510,8 +1495,8 @@ export default function ValuationPage() {
                         <button
                           type="button"
                           onClick={() => handleRemoveSample(item.id)}
-                          className="text-muted-foreground hover:text-red-500 p-1 rounded transition-colors"
-                          title="Remover amostra"
+                          className="text-muted-foreground hover:text-red-500 p-1 rounded transition-colors cursor-pointer"
+                          title="Remover dado amostral"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1522,20 +1507,19 @@ export default function ValuationPage() {
               </table>
             </div>
 
-            {/* Rodapé explicativo do saneamento */}
             <div className="p-3 bg-muted/40 border-t border-border flex flex-wrap items-center justify-between text-xs text-muted-foreground gap-2">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  {estatisticas.amostrasValidas} Amostras Homogeneizadas
+                  {estatisticas.amostrasValidas} Dados Amostrais Homogeneizados
                 </span>
                 <span className="flex items-center gap-1.5 text-red-500 font-medium">
                   <span className="h-2 w-2 rounded-full bg-red-500" />
-                  {estatisticas.amostrasDescartadas} Outliers Descartados
+                  {estatisticas.amostrasDescartadas} Dados Discrepantes Saneados
                 </span>
               </div>
               <div className="text-[11px]">
-                Intervalo Permitido: <strong>{formatM2(estatisticas.limiteInferiorM2)}</strong> até <strong>{formatM2(estatisticas.limiteSuperiorM2)}</strong>
+                Campo de Arbítrio: <strong>{formatM2(estatisticas.limiteInferiorM2)}</strong> até <strong>{formatM2(estatisticas.limiteSuperiorM2)}</strong>
               </div>
             </div>
           </div>
@@ -1543,54 +1527,52 @@ export default function ValuationPage() {
       )}
 
       {/* ============================================================== */}
-      {/* ABA 4: SANEAMENTO ESTATÍSTICO & ESPECIFICAÇÃO NBR 14.653        */}
+      {/* ABA 4: DIAGNÓSTICO ESTATÍSTICO & ESPECIFICAÇÃO NBR 14.653      */}
       {/* ============================================================== */}
       {activeTab === "estatistica" && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Bloco 1: Determinação da Média Aritmética (MA) */}
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-2">
-                <Badge variant="outline" className="w-fit text-[10px]">Passo 1</Badge>
+                <Badge variant="outline" className="w-fit text-[10px]">Etapa 1</Badge>
                 <CardTitle className="text-base font-bold text-foreground">
-                  Média Aritmética Bruta (MA)
+                  Média Amostral Bruta
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Soma de todos os m² dividida pelo total de dados coletados.
+                  Soma integral de todos os valores unitários coletados na região.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 pt-2">
                 <div className="p-3 rounded-lg bg-muted/50 font-mono text-xs space-y-1">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Soma m² ({estatisticas.totalAmostras} amostras):</span>
+                    <span>Somatório ({estatisticas.totalAmostras} dados):</span>
                     <span>{formatM2(estatisticas.somaM2TodasAmostras)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Divisor (n):</span>
+                    <span>Número de Amostras (n):</span>
                     <span>{estatisticas.totalAmostras}</span>
                   </div>
                   <div className="flex justify-between border-t border-border pt-1 font-bold text-foreground text-sm">
-                    <span>MA =</span>
+                    <span>Média Bruta =</span>
                     <span className="text-[#ccff00]">{formatM2(estatisticas.mediaAritmeticaBrutaM2)}/m²</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Bloco 2: Campo de Arbítrio / Intervalo de Saneamento */}
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-2">
-                <Badge variant="outline" className="w-fit text-[10px]">Passo 2</Badge>
+                <Badge variant="outline" className="w-fit text-[10px]">Etapa 2</Badge>
                 <CardTitle className="text-base font-bold text-foreground">
-                  Saneamento Amostral (NBR 14.653)
+                  Campo de Arbítrio & Saneamento
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Eliminação de dados atípicos e discrepantes do mercado.
+                  Filtro normativo para exclusão fundamentada de outliers.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 pt-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold">Tolerância de Desvio:</span>
+                  <span className="text-xs font-semibold">Tolerância Normativa:</span>
                   <div className="flex gap-1">
                     {[10, 15, 20].map((tol) => (
                       <button
@@ -1615,7 +1597,7 @@ export default function ValuationPage() {
                     <span className="text-red-400 font-bold">{formatM2(estatisticas.limiteSuperiorM2)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Média Central (MA):</span>
+                    <span>Média Amostral Central:</span>
                     <span>{formatM2(estatisticas.mediaAritmeticaBrutaM2)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
@@ -1626,36 +1608,35 @@ export default function ValuationPage() {
               </CardContent>
             </Card>
 
-            {/* Bloco 3: Média Final Saneada (MF) */}
             <Card className="border border-border bg-card/60">
               <CardHeader className="pb-2">
-                <Badge variant="outline" className="w-fit text-[10px]">Passo 3</Badge>
+                <Badge variant="outline" className="w-fit text-[10px]">Etapa 3</Badge>
                 <CardTitle className="text-base font-bold text-foreground">
-                  Média Final Saneada (MF)
+                  Valor Unitário Homogeneizado
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Recálculo do m² utilizando somente as amostras homogeneizadas.
+                  Média saneada ponderada pelo fator de valorização pericial.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 pt-2">
                 <div className="p-3 rounded-lg bg-muted/50 font-mono text-xs space-y-1">
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Soma m² Válidos:</span>
+                    <span>Soma dos Dados Válidos:</span>
                     <span>{formatM2(estatisticas.somaM2AmostrasValidas)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Amostras Restantes:</span>
+                    <span>Amostras Efetivas:</span>
                     <span>{estatisticas.amostrasValidas} unidades</span>
                   </div>
                   <div className="flex justify-between border-t border-border pt-1 font-bold text-foreground text-sm">
-                    <span>MF =</span>
+                    <span>Média Saneada =</span>
                     <span className="text-emerald-400">{formatM2(estatisticas.mediaFinalSaneadaM2)}/m²</span>
                   </div>
                 </div>
 
                 <div className="p-2.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-xs text-foreground space-y-1">
                   <div className="flex justify-between font-semibold">
-                    <span>Valor Viável com +{imovel.fatorApreciacaoPercent}%:</span>
+                    <span>Valor Unitário Ajustado (+{imovel.fatorApreciacaoPercent}%):</span>
                     <span className="text-[#ccff00] font-bold">{formatM2(estatisticas.valorM2Apreciado)}/m²</span>
                   </div>
                 </div>
@@ -1663,18 +1644,21 @@ export default function ValuationPage() {
             </Card>
           </div>
 
-          {/* Especificação Técnica da Avaliação (Grau de Fundamentação e Precisão) */}
+          {/* Especificação Técnica da Avaliação */}
           <Card className="border border-border bg-card/60">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#ccff00]" />
-                Especificação da Avaliação (NBR 14.653 - Seção 8 da Planilha)
+                <Award className="h-4 w-4 text-[#ccff00]" />
+                Enquadramento e Especificação Técnica da Avaliação
               </CardTitle>
+              <CardDescription className="text-xs">
+                Graus de fundamentação e precisão atingidos conforme Tabela 1 da ABNT NBR 14.653-2.
+              </CardDescription>
             </CardHeader>
             <CardContent className="pt-4 grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  Metodologia Empregada
+                  Metodologia Aplicada
                 </label>
                 <select
                   value={imovel.metodologia}
@@ -1683,7 +1667,7 @@ export default function ValuationPage() {
                 >
                   <option value="MCDDM">Método Comparativo Direto de Dados de Mercado</option>
                   <option value="SEM_METODOLOGIA">Sem Metodologia Definida</option>
-                  <option value="OUTRO">Outro</option>
+                  <option value="OUTRO">Outro Método</option>
                 </select>
               </div>
 
@@ -1696,7 +1680,7 @@ export default function ValuationPage() {
                   onChange={(e) => setImovel({ ...imovel, tratamentoDados: e.target.value as any })}
                   className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border"
                 >
-                  <option value="ESTATISTICA_INFERENCIAL">Estatística Inferencial</option>
+                  <option value="ESTATISTICA_INFERENCIAL">Estatística Inferencial / Amostral</option>
                   <option value="FATORES">Tratamento por Fatores</option>
                   <option value="NUMERO_DADOS_INSUFICIENTE">Nº de Dados Insuficientes</option>
                 </select>
@@ -1711,9 +1695,9 @@ export default function ValuationPage() {
                   onChange={(e) => setImovel({ ...imovel, fundamentacao: e.target.value as GrauFundamentacao })}
                   className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border"
                 >
-                  <option value="GRAU_I">Grau I</option>
-                  <option value="GRAU_II">Grau II</option>
-                  <option value="GRAU_III">Grau III</option>
+                  <option value="GRAU_I">Grau I (Simplificado)</option>
+                  <option value="GRAU_II">Grau II (Intermediário)</option>
+                  <option value="GRAU_III">Grau III (Rigoroso)</option>
                 </select>
               </div>
 
@@ -1726,7 +1710,7 @@ export default function ValuationPage() {
                   onChange={(e) => setImovel({ ...imovel, precisao: e.target.value as GrauPrecisao })}
                   className="w-full px-2.5 py-2 text-xs rounded-md bg-background border border-border"
                 >
-                  <option value="GRAU_I">Grau I</option>
+                  <option value="GRAU_I">Grau I (Campo de Arbítrio)</option>
                   <option value="GRAU_II">Grau II</option>
                   <option value="GRAU_III">Grau III</option>
                 </select>
@@ -1734,16 +1718,16 @@ export default function ValuationPage() {
             </CardContent>
           </Card>
 
-          {/* Gráfico Visual de Dispersão das Amostras */}
+          {/* Gráfico de Dispersão */}
           <Card className="border border-border bg-card/60">
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-base font-bold flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-[#ccff00]" />
-                  Dispersão das Amostras e Linhas de Corte
+                  Curva de Dispersão dos Valores Amostrais
                 </span>
                 <Badge variant="outline" className="text-xs">
-                  Intervalo Normativo: {formatM2(estatisticas.limiteInferiorM2)} ~ {formatM2(estatisticas.limiteSuperiorM2)}
+                  Faixa Válida: {formatM2(estatisticas.limiteInferiorM2)} ~ {formatM2(estatisticas.limiteSuperiorM2)}
                 </Badge>
               </CardTitle>
             </CardHeader>
@@ -1759,7 +1743,7 @@ export default function ValuationPage() {
                   return (
                     <div key={item.id} className="flex items-center gap-3 text-xs">
                       <span className="font-mono w-8 font-bold text-foreground">{item.codigo}</span>
-                      <span className="w-28 truncate text-muted-foreground">{item.proprietarioOuFonte}</span>
+                      <span className="w-32 truncate text-muted-foreground">{item.proprietarioOuFonte}</span>
                       
                       <div className="flex-1 bg-muted/40 h-5 rounded-md overflow-hidden relative flex items-center">
                         <div
@@ -1775,12 +1759,12 @@ export default function ValuationPage() {
                         </span>
                       </div>
 
-                      <div className="w-24 text-right">
+                      <div className="w-28 text-right">
                         {item.isHomogeneizada ? (
-                          <span className="text-emerald-500 font-semibold text-[11px]">Válida</span>
+                          <span className="text-emerald-500 font-semibold text-[11px]">Homogeneizada</span>
                         ) : (
                           <span className="text-red-400 font-semibold text-[11px]">
-                            {item.motivoDescarte === "ACIMA_TETO" ? "Acima" : "Abaixo"}
+                            {item.motivoDescarte === "ACIMA_TETO" ? "Atípico Superior" : "Atípico Inferior"}
                           </span>
                         )}
                       </div>
@@ -1794,7 +1778,7 @@ export default function ValuationPage() {
       )}
 
       {/* ============================================================== */}
-      {/* ABA 5: VISTORIA & CONDIÇÕES GERAIS (Quesitos 7.1 a 7.5)         */}
+      {/* ABA 5: VISTORIA TÉCNICA E EXAME PERICIAL FÍSICO                 */}
       {/* ============================================================== */}
       {activeTab === "vistoria" && (
         <div className="space-y-6">
@@ -1802,18 +1786,18 @@ export default function ValuationPage() {
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[#ccff00]" />
-                7. Condições Gerais & Vistoria Técnica (Planilha Seção 7)
+                Relatório de Vistoria Pericial In Loco
               </CardTitle>
               <CardDescription className="text-xs">
-                Responda com SIM ou NÃO a cada um dos 5 quesitos técnicos previstos na NBR 14.653.
+                Inspeção física sobre regularidade documental, solidez estrutural, patologias aparentes e salubridade.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4 space-y-6">
-              {/* 7.1 Correspondência da documentação */}
+              {/* Conformidade Documental */}
               <div className="p-4 rounded-lg bg-muted/30 border border-border/60 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-foreground">
-                    7.1 - As informações apresentadas na documentação correspondem às verificadas na vistoria?
+                    1. As informações da certidão de matrícula e projeto aprovado correspondem às verificadas in loco?
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -1841,17 +1825,17 @@ export default function ValuationPage() {
                     type="text"
                     value={imovel.justificativaDocumentacao}
                     onChange={(e) => setImovel({ ...imovel, justificativaDocumentacao: e.target.value })}
-                    placeholder="Em caso negativo, justifique a divergência documental..."
+                    placeholder="Em caso negativo, aponte divergências de área construída ou averbações pendentes..."
                     className="w-full p-2 text-xs rounded bg-background border border-border"
                   />
                 )}
               </div>
 
-              {/* 7.2 Estabilidade e Solidez */}
+              {/* Estabilidade e Solidez */}
               <div className="p-4 rounded-lg bg-muted/30 border border-border/60 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-foreground">
-                    7.2 - O imóvel aparenta condições de estabilidade e solidez?
+                    2. A edificação aparenta perfeitas condições de estabilidade e solidez estrutural?
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -1879,17 +1863,17 @@ export default function ValuationPage() {
                     type="text"
                     value={imovel.justificativaSolidez}
                     onChange={(e) => setImovel({ ...imovel, justificativaSolidez: e.target.value })}
-                    placeholder="Em caso negativo, justifique problemas de estabilidade..."
+                    placeholder="Em caso negativo, aponte anomalias na fundação, pilares ou vigas..."
                     className="w-full p-2 text-xs rounded bg-background border border-border"
                   />
                 )}
               </div>
 
-              {/* 7.3 Vícios de Construção */}
+              {/* Vícios de Construção */}
               <div className="p-4 rounded-lg bg-muted/30 border border-border/60 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-foreground">
-                    7.3 - O imóvel apresenta vícios de construção aparentes?
+                    3. Foram constatados vícios aparentes de construção ou patologias nas vedações e coberturas?
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -1917,17 +1901,17 @@ export default function ValuationPage() {
                     type="text"
                     value={imovel.descricaoVicios}
                     onChange={(e) => setImovel({ ...imovel, descricaoVicios: e.target.value })}
-                    placeholder="Em caso afirmativo, relate os problemas (trincas, patologias, umidade)..."
+                    placeholder="Descreva as manifestações patológicas (trincas, umidade ascendente, infiltração)..."
                     className="w-full p-2 text-xs rounded bg-background border border-border"
                   />
                 )}
               </div>
 
-              {/* 7.4 Habitabilidade */}
+              {/* Habitabilidade */}
               <div className="p-4 rounded-lg bg-muted/30 border border-border/60 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-foreground">
-                    7.4 - O imóvel aparenta condições de habitabilidade?
+                    4. O imóvel reúne plenas condições de habitabilidade, salubridade e segurança para uso imediato?
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -1955,36 +1939,36 @@ export default function ValuationPage() {
                     type="text"
                     value={imovel.justificativaHabitabilidade}
                     onChange={(e) => setImovel({ ...imovel, justificativaHabitabilidade: e.target.value })}
-                    placeholder="Em caso negativo, justifique a falta de habitabilidade..."
+                    placeholder="Em caso negativo, aponte os impeditivos de habitabilidade..."
                     className="w-full p-2 text-xs rounded bg-background border border-border"
                   />
                 )}
               </div>
 
-              {/* 7.5 Fatores de Valorização e Depreciação */}
+              {/* Fatores de Influência */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border/50">
                 <div>
                   <label className="text-xs font-bold text-foreground block mb-1">
-                    7.5.1 Fatores Valorizantes de Entorno
+                    Fatores Valorizantes de Entorno
                   </label>
                   <input
                     type="text"
                     value={imovel.fatoresValorizantes}
                     onChange={(e) => setImovel({ ...imovel, fatoresValorizantes: e.target.value })}
-                    placeholder="Ex: Vista para o mar, vista para parques, metrô..."
+                    placeholder="Ex: Vista perene para área verde, insolação matutina, proximidade de polos"
                     className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-foreground block mb-1">
-                    7.5.2 Fatores Depreciativos de Entorno
+                    Fatores Depreciativos de Entorno
                   </label>
                   <input
                     type="text"
                     value={imovel.fatoresDepreciativos}
                     onChange={(e) => setImovel({ ...imovel, fatoresDepreciativos: e.target.value })}
-                    placeholder="Ex: Córregos, alta tensão, presídio, feira livre..."
+                    placeholder="Ex: Poluição sonora de rodovia, linhas de alta tensão, córrego a céu aberto"
                     className="w-full px-3 py-2 text-xs rounded-md bg-background border border-border focus:border-[#ccff00] focus:outline-none"
                   />
                 </div>
@@ -1995,21 +1979,24 @@ export default function ValuationPage() {
       )}
 
       {/* ============================================================== */}
-      {/* ABA 6: LAUDO PERICIAL PTAM COMPLETO (Layout Formal para PDF)   */}
+      {/* ABA 6: PARECER TÉCNICO DE AVALIAÇÃO MERCADOLÓGICA (PTAM OFICIAL)*/}
       {/* ============================================================== */}
       {activeTab === "laudo" && (
         <div className="space-y-6">
           <div className="flex items-center justify-between bg-muted/40 p-4 rounded-xl border border-border print:hidden">
             <div>
-              <h3 className="text-sm font-bold text-foreground">Parecer Técnico de Avaliação Mercadológica (PTAM)</h3>
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <FileText className="h-4 w-4 text-[#ccff00]" />
+                Laudo Oficial — Parecer Técnico de Avaliação Mercadológica (PTAM)
+              </h3>
               <p className="text-xs text-muted-foreground">
-                Relatório executivo completo contendo todos os quesitos normativos da ABNT NBR 14.653-2.
+                Documento técnico pericial estruturado conforme os requisitos da ABNT NBR 14.653-2 e do COFECI.
               </p>
             </div>
             <Button
               size="sm"
               onClick={handlePrint}
-              className="text-xs h-8 gap-1.5 bg-[#ccff00] text-black hover:bg-[#b8e600] font-semibold"
+              className="text-xs h-8 gap-1.5 bg-[#ccff00] text-black hover:bg-[#b8e600] font-bold"
             >
               <Printer className="h-3.5 w-3.5" />
               Imprimir / Salvar PDF
@@ -2018,74 +2005,77 @@ export default function ValuationPage() {
 
           {/* O LAUDO TÉCNICO FORMAL */}
           <div className="bg-card border border-border rounded-xl p-8 max-w-4xl mx-auto shadow-sm print:border-none print:shadow-none print:p-0 space-y-6 text-foreground">
-            {/* Cabeçalho do Laudo */}
+            {/* Cabeçalho Oficial do Laudo */}
             <div className="border-b-2 border-foreground pb-4 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-black uppercase tracking-tight text-foreground">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block">
+                  DUZZIMOB GESTÃO IMOBILIÁRIA • SETOR DE ENGENHARIA E AVALIAÇÕES
+                </span>
+                <h2 className="text-xl font-black uppercase tracking-tight text-foreground mt-0.5">
                   Parecer Técnico de Avaliação Mercadológica (PTAM)
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Método Comparativo Direto de Dados de Mercado — NBR 14.653-2 | Ano {imovel.ano || 2022}
+                  Método Comparativo Direto de Dados de Mercado — ABNT NBR 14.653-2 | Resolução COFECI nº 1.066/2007
                 </p>
               </div>
               <div className="text-right">
-                <span className="text-xs font-mono font-bold block">DUZZIMOB GESTÃO IMOBILIÁRIA</span>
-                <span className="text-[11px] text-muted-foreground">Data Parecer: {dataParecerFormatada}</span>
-                <span className="text-[11px] text-muted-foreground block">Data Vistoria: {imovel.dataVistoria}</span>
+                <span className="text-xs font-mono font-bold block">PARECER Nº {imovel.ano || 2022}/PTAM-01</span>
+                <span className="text-[11px] text-muted-foreground">Emissão: {dataParecerFormatada}</span>
+                <span className="text-[11px] text-muted-foreground block">Vistoria: {imovel.dataVistoria}</span>
               </div>
             </div>
 
-            {/* 1 e 2. Solicitante e Identificação */}
+            {/* 1. Solicitante e Identificação do Bem */}
             <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="p-3 rounded-lg border border-border/80 bg-muted/20 space-y-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground">1. Solicitante / Proponente</span>
-                <p className="font-semibold text-foreground text-sm">{imovel.proponente || "Não informado"}</p>
+              <div className="p-3.5 rounded-lg border border-border/80 bg-muted/20 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground block">1. Solicitante / Finalidade</span>
+                <p className="font-bold text-foreground text-sm">{imovel.proponente || "Não informado"}</p>
                 <p className="text-muted-foreground">CPF/CNPJ: {imovel.cpfProponente || "Não informado"}</p>
-                <p className="text-muted-foreground">Finalidade: {imovel.objetivo}</p>
+                <p className="text-muted-foreground">Finalidade: <strong>{imovel.objetivo}</strong></p>
               </div>
 
-              <div className="p-3 rounded-lg border border-border/80 bg-muted/20 space-y-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground">2. Identificação do Imóvel</span>
-                <p className="font-semibold text-foreground text-sm">
+              <div className="p-3.5 rounded-lg border border-border/80 bg-muted/20 space-y-1">
+                <span className="text-[10px] font-bold uppercase text-muted-foreground block">2. Identificação do Bem Avaliando</span>
+                <p className="font-bold text-foreground text-sm">
                   {imovel.endereco}, {imovel.numero} {imovel.complemento && `(${imovel.complemento})`}
                 </p>
                 <p className="text-muted-foreground">
-                  Bairro: {imovel.bairro} — {imovel.cidade}/{imovel.uf}
+                  Bairro {imovel.bairro} — {imovel.cidade}/{imovel.uf}
                 </p>
-                <p className="text-muted-foreground">Matrícula: {imovel.matricula || "Em regularização"} ({imovel.cartorio})</p>
+                <p className="text-muted-foreground">Matrícula: <strong>{imovel.matricula || "Em regularização"}</strong> ({imovel.cartorio})</p>
               </div>
             </div>
 
-            {/* 3 e 4. Microrregião e Terreno */}
+            {/* 3. Região e Terreno */}
             <div className="grid grid-cols-2 gap-4 text-xs">
               <div className="p-3 rounded-lg border border-border/60 bg-muted/10 space-y-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground">3. Microrregião</span>
+                <span className="text-[10px] font-bold uppercase text-muted-foreground block">3. Caracterização da Microrregião</span>
                 <p><span className="text-muted-foreground">Uso Predominante:</span> <strong className="capitalize">{imovel.usoPredominante}</strong></p>
                 <p><span className="text-muted-foreground">Padrão Construtivo:</span> <strong className="capitalize">{imovel.padraoConstrutivoPredominante}</strong></p>
                 <p><span className="text-muted-foreground">Acesso:</span> <strong className="capitalize">{imovel.acessoBairro}</strong> | Mercado: <strong>{imovel.desempenhoMercado}</strong></p>
               </div>
 
               <div className="p-3 rounded-lg border border-border/60 bg-muted/10 space-y-1">
-                <span className="text-[10px] font-bold uppercase text-muted-foreground">4. Dados do Terreno</span>
+                <span className="text-[10px] font-bold uppercase text-muted-foreground block">4. Dados Físicos do Terreno</span>
                 <p><span className="text-muted-foreground">Área Total:</span> <strong>{imovel.areaTerrenoM2} m²</strong> | Testada: <strong>{imovel.testadaMetros} m</strong></p>
                 <p><span className="text-muted-foreground">Topografia:</span> <strong className="capitalize">{imovel.topografia}</strong> | Cota: <strong>{imovel.cotaGreide}</strong></p>
-                <p><span className="text-muted-foreground">Formato:</span> <strong className="capitalize">{imovel.formatoTerreno}</strong> | Situação: <strong>{imovel.situacaoQuadra}</strong></p>
+                <p><span className="text-muted-foreground">Geometria:</span> <strong className="capitalize">{imovel.formatoTerreno}</strong> | Situação: <strong>{imovel.situacaoQuadra}</strong></p>
               </div>
             </div>
 
-            {/* 5. Dados Físicos da Edificação */}
+            {/* 4. Características Físicas da Edificação */}
             <div className="border border-border rounded-lg p-4 text-xs grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/10">
               <div>
-                <span className="text-muted-foreground block text-[10px] uppercase">Área Construída Útil</span>
+                <span className="text-muted-foreground block text-[10px] uppercase">Área Construída Privativa</span>
                 <span className="font-bold text-foreground text-sm">{imovel.areaConstruidaM2} m²</span>
               </div>
               <div>
-                <span className="text-muted-foreground block text-[10px] uppercase">Tipologia</span>
+                <span className="text-muted-foreground block text-[10px] uppercase">Tipologia Construtiva</span>
                 <span className="font-bold text-foreground capitalize text-sm">{imovel.tipo} ({imovel.disposicaoEdificacao})</span>
               </div>
               <div>
-                <span className="text-muted-foreground block text-[10px] uppercase">Dormitórios / Vagas</span>
-                <span className="font-bold text-foreground text-sm">{imovel.quartos} quartos ({imovel.suites} suíte) | {imovel.vagas} vagas</span>
+                <span className="text-muted-foreground block text-[10px] uppercase">Composição de Cômodos</span>
+                <span className="font-bold text-foreground text-sm">{imovel.quartos} dormitórios ({imovel.suites} suíte) | {imovel.vagas} vagas</span>
               </div>
               <div>
                 <span className="text-muted-foreground block text-[10px] uppercase">Padrão & Conservação</span>
@@ -2093,54 +2083,54 @@ export default function ValuationPage() {
               </div>
             </div>
 
-            {/* 7. Vistoria Técnica e Parecer de Solidez */}
+            {/* 5. Vistoria Técnica e Parecer de Solidez */}
             <div className="p-3 rounded-lg border border-border bg-muted/20 text-xs space-y-1">
-              <span className="text-[10px] font-bold uppercase text-muted-foreground">7. Vistoria Física & Habitabilidade</span>
+              <span className="text-[10px] font-bold uppercase text-muted-foreground block">5. Vistoria Pericial In Loco</span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                <div>Doc Corresponde: <strong>{imovel.docCorrespondeVistoria ? "SIM" : "NÃO"}</strong></div>
-                <div>Estabilidade/Solidez: <strong>{imovel.aparentaEstabilidadeSolidez ? "SIM" : "NÃO"}</strong></div>
+                <div>Conformidade Documental: <strong>{imovel.docCorrespondeVistoria ? "SIM" : "NÃO"}</strong></div>
+                <div>Estabilidade e Solidez: <strong>{imovel.aparentaEstabilidadeSolidez ? "SIM" : "NÃO"}</strong></div>
                 <div>Vícios Aparentes: <strong>{imovel.temViciosConstrucao ? "SIM" : "NÃO"}</strong></div>
-                <div>Habitabilidade: <strong>{imovel.aparentaHabitabilidade ? "SIM" : "NÃO"}</strong></div>
+                <div>Condições de Habitabilidade: <strong>{imovel.aparentaHabitabilidade ? "SIM" : "NÃO"}</strong></div>
               </div>
               {imovel.fatoresValorizantes && (
-                <p className="pt-1 text-muted-foreground">Fatores Valorizantes: <strong className="text-foreground">{imovel.fatoresValorizantes}</strong></p>
+                <p className="pt-1 text-muted-foreground">Fatores Valorizantes Observados: <strong className="text-foreground">{imovel.fatoresValorizantes}</strong></p>
               )}
             </div>
 
-            {/* 8. Memória Estatística Resumida */}
+            {/* 6. Memória do Tratamento Estatístico Amostral */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-foreground border-b border-border pb-1">
-                8. Síntese do Tratamento Amostral de Mercado (NBR 14.653-2)
+                6. Diagnóstico do Tratamento Amostral de Mercado (NBR 14.653-2)
               </h4>
               <div className="text-xs space-y-2 leading-relaxed">
                 <p>
-                  Foram coletadas <strong>{estatisticas.totalAmostras} amostras</strong> de imóveis comparáveis em {imovel.cidade}.
-                  Após aplicação do saneamento estatístico por campo de arbítrio (intervalo de confiança de ±{toleranciaPercent}%), restaram{" "}
+                  Foi realizada prospecção de mercado coletando <strong>{estatisticas.totalAmostras} imóveis comparáveis</strong> na microrregião de {imovel.cidade}.
+                  Aplicado o saneamento estatístico por campo de arbítrio (intervalo de confiança de ±{toleranciaPercent}%), restaram{" "}
                   <strong>{estatisticas.amostrasValidas} amostras válidas</strong> devidamente homogeneizadas.
-                  A avaliação enquadra-se em <strong>{imovel.fundamentacao}</strong> e <strong>{imovel.precisao}</strong>.
+                  O presente trabalho pericial atinge a classificação técnica em <strong>{imovel.fundamentacao}</strong> e <strong>{imovel.precisao}</strong>.
                 </p>
                 
                 <div className="grid grid-cols-3 gap-3 p-3 rounded-lg bg-muted/30 border border-border font-mono text-center">
                   <div>
-                    <span className="text-[10px] text-muted-foreground block">Média Amostral (MF)</span>
+                    <span className="text-[10px] text-muted-foreground block">Média Homogeneizada (MF)</span>
                     <span className="font-bold text-foreground">{formatM2(estatisticas.mediaFinalSaneadaM2)}/m²</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground block">Fator de Apreciação</span>
+                    <span className="text-[10px] text-muted-foreground block">Ponderação de Padrão</span>
                     <span className="font-bold text-emerald-500">+{imovel.fatorApreciacaoPercent}%</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground block">Valor Viável do m²</span>
+                    <span className="text-[10px] text-muted-foreground block">Valor Unitário Final Adotado</span>
                     <span className="font-bold text-foreground text-sm">{formatM2(estatisticas.valorM2Apreciado)}/m²</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Conclusão de Valor Comercial */}
+            {/* Conclusão de Valores Comerciais */}
             <div className="p-6 rounded-xl bg-muted/40 border-2 border-foreground/30 space-y-4">
               <h4 className="text-sm font-black uppercase text-foreground tracking-tight text-center">
-                Conclusão de Valores Comerciais Recomendados
+                7. Conclusão Pericial e Faixas de Valor Mercadológico
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
@@ -2151,32 +2141,32 @@ export default function ValuationPage() {
                   <span className="text-lg font-black text-foreground block mt-1">
                     {formatBRL(estatisticas.precoFechamentoSugerido)}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">Margem de 5% p/ fechar</span>
+                  <span className="text-[10px] text-muted-foreground">Valor de alta liquidez (-5%)</span>
                 </div>
 
                 <div className="p-4 rounded-lg bg-card border-2 border-[#ccff00] text-center shadow-sm">
                   <span className="text-[10px] font-bold uppercase text-[#ccff00] block">
-                    Valor Técnico de Avaliação
+                    Valor Técnico Pericial do Bem
                   </span>
                   <span className="text-xl font-black text-foreground block mt-1">
                     {formatBRL(estatisticas.valorAvaliacaoBase)}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">Valor de Mercado Justo</span>
+                  <span className="text-[10px] text-muted-foreground">Valor Justo de Avaliação</span>
                 </div>
 
                 <div className="p-3 rounded-lg bg-card border border-blue-500/40 text-center">
                   <span className="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400 block">
-                    Preço para Anúncio
+                    Preço Sugerido para Anúncio
                   </span>
                   <span className="text-lg font-black text-foreground block mt-1">
                     {formatBRL(estatisticas.precoAnuncioSugerido)}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">Com margem de negociação</span>
+                  <span className="text-[10px] text-muted-foreground">Margem para negociação (+5%)</span>
                 </div>
               </div>
             </div>
 
-            {/* Assinatura do Avaliador */}
+            {/* Assinatura do Perito Avaliador */}
             <div className="pt-10 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs">
               <div>
                 <input

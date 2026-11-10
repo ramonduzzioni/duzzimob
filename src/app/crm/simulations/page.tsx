@@ -34,6 +34,9 @@ import {
 } from "@/lib/calculator/caixa";
 import { SimulationSystem } from "@/types/database";
 
+// Anos de nascimento permitidos pela Caixa (de 18 anos até teto Caixa ~80 anos, cobrindo 1940 até 2008)
+const BIRTH_YEARS = Array.from({ length: 2008 - 1940 + 1 }, (_, i) => 2008 - i);
+
 export default function SimulationsPage() {
   // Parâmetros Financeiros & Regras Caixa (Reversas)
   const [propertyValue, setPropertyValue] = React.useState<number>(273700);
@@ -440,16 +443,46 @@ export default function SimulationsPage() {
               <div>
                 <label className="text-muted-foreground block mb-1 font-medium flex items-center justify-between">
                   <span>Data de Nasc. (Proponente)</span>
-                  <span className="text-[10px] text-emerald-600 dark:text-[#ccff00]">
-                    {simulation.proponentAgeYears} anos
+                  <span className="text-[10px] text-emerald-600 dark:text-[#ccff00] font-mono">
+                    {simulation.proponentAgeYears} anos ({simulation.appliedTermMonths}m teto)
                   </span>
                 </label>
-                <input
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full h-9 px-3 rounded-xl bg-muted border border-border text-foreground text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
-                />
+                <div className="grid grid-cols-12 gap-1.5">
+                  <div className="col-span-8">
+                    <input
+                      type="date"
+                      min="1940-01-01"
+                      max="2008-12-31"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      className="w-full h-9 px-3 rounded-xl bg-muted border border-border text-foreground text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
+                      title="Selecione ou digite a data de nascimento (a partir de 1940)"
+                    />
+                  </div>
+                  <div className="col-span-4">
+                    <select
+                      value={birthDate ? birthDate.split("-")[0] : "1994"}
+                      onChange={(e) => {
+                        const newYear = e.target.value;
+                        const parts = (birthDate || "1994-05-15").split("-");
+                        const month = parts[1] || "05";
+                        const day = parts[2] || "15";
+                        setBirthDate(`${newYear}-${month}-${day}`);
+                      }}
+                      className="w-full h-9 px-2 rounded-xl bg-muted border border-border text-foreground font-mono text-xs focus:outline-none focus:border-emerald-500 dark:focus:border-[#ccff00]"
+                      title="Ano rápido (vai de 2008 até 1940)"
+                    >
+                      {BIRTH_YEARS.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground mt-1 block">
+                  Permite nascimentos de 1940 a 2008 (incluindo 1960)
+                </span>
               </div>
 
               {/* Cidade e UF */}

@@ -239,6 +239,7 @@ export function calculateCaixaSimulation(input: SimulationInput): SimulationResu
   // Prazo aplicado (se o usuário escolheu um prazo menor ou o teto da idade)
   const requestedTerm = input.termMonths || 420;
   const appliedTermMonths = Math.min(requestedTerm, maxCaixaTermMonths);
+  const safeTermMonths = Math.max(1, appliedTermMonths);
 
   // 2. Faixa e Taxa de Juros Caixa
   const faixa = getFaixaCaixa(grossIncome, propertyValue);
@@ -258,20 +259,14 @@ export function calculateCaixaSimulation(input: SimulationInput): SimulationResu
   const maxMonthlyPaymentAllowed = grossIncome * CAIXA_CONFIG.percentualMaximoComprometimentoRenda;
   const maxLtvValue = Math.round(propertyValue * CAIXA_CONFIG.percentualMaximoFinanciamento);
 
-  // Calcula capacidade máxima de financiamento considerando que a 1ª Parcela Total = Parcela Base + Encargos <= Renda * 0.3
-  // Parcela Base SAC = PV * (1/n + i)
-  // Parcela Base PRICE = PV * [i / (1 - (1+i)^-n)]
-  // Encargos = TAC + DFI + (taxaMIP * PV)
-  // Logo: 1ª Parcela = PV * (FatorAmort + taxaMIP) + (TAC + DFI) <= MaxMonthly
-  // PV <= (MaxMonthly - TAC - DFI) / (FatorAmort + taxaMIP)
   let amortFactor = 0;
   if (systemType === "SAC") {
-    amortFactor = 1 / appliedTermMonths + interestRateMonthly;
+    amortFactor = 1 / safeTermMonths + interestRateMonthly;
   } else {
     amortFactor =
       interestRateMonthly === 0
-        ? 1 / appliedTermMonths
-        : interestRateMonthly / (1 - Math.pow(1 + interestRateMonthly, -appliedTermMonths));
+        ? 1 / safeTermMonths
+        : interestRateMonthly / (1 - Math.pow(1 + interestRateMonthly, -safeTermMonths));
   }
 
   const mipFactor = taxaMipPercent / 100;
@@ -279,7 +274,8 @@ export function calculateCaixaSimulation(input: SimulationInput): SimulationResu
   const maxFinancingByIncome = Math.round(availableForFinancing / (amortFactor + mipFactor));
 
   // Valor aprovado é limitado a 80% do valor do imóvel e à capacidade da renda
-  const approvedFinancingValue = Math.min(maxLtvValue, Math.max(0, maxFinancingByIncome));
+  const approvedFinancingValue =
+    maxCaixaTermMonths <= 0 ? 0 : Math.min(maxLtvValue, Math.max(0, maxFinancingByIncome));
 
   // 6. Cálculo das Parcelas Reais com o Valor Aprovado
   let firstInstallmentBase = 0;
@@ -287,17 +283,28 @@ export function calculateCaixaSimulation(input: SimulationInput): SimulationResu
   const initialMip = mipFactor * approvedFinancingValue;
   const totalEncargosMensais = tac + dfi + initialMip;
 
-  if (systemType === "SAC") {
-    const amort = approvedFinancingValue / appliedTermMonths;
-    firstInstallmentBase = amort + approvedFinancingValue * interestRateMonthly;
-    lastInstallmentBase = amort + amort * interestRateMonthly;
-  } else {
-    firstInstallmentBase = approvedFinancingValue * amortFactor;
-    lastInstallmentBase = firstInstallmentBase;
+  if (approvedFinancingValue > 0) {
+    if (systemType === "SAC") {
+      const amort = approvedFinancingValue / safeTermMonths;
+      firstInstallmentBase = amort + approvedFinancingValue * interestRateMonthly;
+      lastInstallmentBase = amort + amort * interestRateMonthly;
+    } else {
+      firstInstallmentBase = approvedFinancingValue * amortFactor;
+      lastInstallmentBase = firstInstallmentBase;
+    }
   }
 
-  const firstInstallmentCaixa = Math.round(firstInstallmentBase + totalEncargosMensais);
-  const lastInstallmentCaixa = Math.round(lastInstallmentBase + tac + dfi + (mipFactor * (approvedFinancingValue / appliedTermMonths)));
+  const firstInstallmentCaixa =
+    approvedFinancingValue > 0 ? Math.round(firstInstallmentBase + totalEncargosMensais) : 0;
+  const lastInstallmentCaixa =
+    approvedFinancingValue > 0
+      ? Math.round(
+          lastInstallmentBase +
+            tac +
+            dfi +
+            mipFactor * (approvedFinancingValue / safeTermMonths)
+        )
+      : 0;
 
   // Subsídio MCMV
   const subsidyValue = estimateSubsidy(grossIncome, propertyValue, cidade);

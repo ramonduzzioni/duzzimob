@@ -7,6 +7,7 @@ import {
   Calculator,
   MessageSquare,
   FileCheck2,
+  Scale,
   Building2,
   Users,
   Sparkles,
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { href: "/crm/simulations", label: "Simulador Caixa", icon: Calculator },
   { href: "/crm/waha", label: "WhatsApp & IA", icon: MessageSquare },
   { href: "/crm/contracts", label: "Auditoria Jurídica", icon: FileCheck2 },
+  { href: "/crm/valuation", label: "Avaliação Imobiliária", icon: Scale },
 ];
 
 export function CrmNavbar() {
